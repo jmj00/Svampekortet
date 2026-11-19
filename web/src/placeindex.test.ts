@@ -4,6 +4,7 @@ import { mergeHits, preferHits } from "./addresses";
 import placesText from "./data/places.json?raw";
 import {
   buildPlaceIndex,
+  districtPoint,
   distinctTexts,
   isPlaceName,
   districtZoom,
@@ -299,6 +300,34 @@ describe("the published list", () => {
       if (east) expect(s.target[0]).toBeGreaterThan(11);
     }
     expect(first("Anholt").target[1]).toBeGreaterThan(56.6); // the island
+  });
+
+  it("puts every postal district on land: at one of its own towns", () => {
+    const km = (a: [number, number], b: [number, number]) =>
+      Math.hypot((a[0] - b[0]) * 111.32 * Math.cos((a[1] * Math.PI) / 180), (a[1] - b[1]) * 110.57);
+    let checked = 0;
+    real.postal.forEach((district, i) => {
+      const own = real.towns.filter((town) => town.postal === i);
+      if (own.length === 0) return; // (a street postcode in København)
+      const { target } = districtPoint(real, district);
+      const nearest = Math.min(...own.map((town) => km(target, [town.lon, town.lat])));
+      expect(nearest, `${district.postnr} ${district.name}`).toBeLessThan(3);
+      checked++;
+    });
+    expect(checked).toBeGreaterThan(500);
+    // the ones that were in the sea
+    const at = (postnr: string) => districtPoint(real, real.byPostnr.get(postnr)!).target;
+    expect(km(at("6857"), [8.104, 55.556])).toBeLessThan(1); // Blåvand
+    expect(km(at("6960"), [8.124, 56.015])).toBeLessThan(1); // Hvide Sande
+    expect(km(at("3700"), [14.713, 55.102])).toBeLessThan(1); // Rønne
+    expect(km(at("6950"), [8.264, 56.088])).toBeLessThan(1); // Ringkøbing
+    expect(at("6720")[0]).toBeGreaterThan(8.3); // on Fanø, not west of it
+  });
+
+  it("offers a district first when the towns of its name lie elsewhere", () => {
+    expect(matchPlaces(real, "Læsø")[0].text).toBe("9940 Læsø");
+    expect(matchPlaces(real, "Askø")[0].text).toBe("4942 Askø");
+    expect(matchPlaces(real, "Fanø")[0].text).toBe("6720 Fanø");
   });
 
   it("finds a postal district by its last word", () => {

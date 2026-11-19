@@ -46,6 +46,9 @@ export interface PlaceIndex {
   postalByName: Map<string, PostalDistrict[]>;
   /** Every normalised town and district name, sorted, for prefix search. */
   names: string[];
+  /** Postal number -> the district's main town: where a district is on land
+   * (its box takes in the sea around it). */
+  mainTown: Map<string, Town>;
 }
 
 export interface RawPlaces {
@@ -105,7 +108,24 @@ export function buildPlaceIndex(raw: RawPlaces): PlaceIndex {
     postalByName.set(key, list);
   }
   const names = [...new Set([...townsByName.keys(), ...postalByName.keys()])].sort();
-  return { towns, postal, byPostnr, townsByName, postalByName, names };
+  const mainTown = new Map<string, Town>();
+  for (const town of towns) {
+    const district = postal[town.postal];
+    if (!district) continue;
+    const best = mainTown.get(district.postnr);
+    if (!best || mainRank(district, town) < mainRank(district, best))
+      mainTown.set(district.postnr, town);
+  }
+  return { towns, postal, byPostnr, townsByName, postalByName, names, mainTown };
+}
+
+/** How well a town stands for its district, lower is better: the one of
+ * the district's own name (Blåvand for 6857 Blåvand, even as a holiday-home
+ * area), else a town before a part of one before a holiday-home area, the
+ * largest first. */
+function mainRank(district: PostalDistrict, town: Town): number {
+  const named = normalizeName(town.name) === normalizeName(district.name) ? 0 : 1;
+  return named * 1000 + town.type * 100 - Math.min(town.radiusKm, 99);
 }
 
 /** Whether `a` and `b` are at most one typing slip apart (a letter missing,
@@ -212,7 +232,7 @@ export function parseAddressQuery(index: PlaceIndex, query: string): AddressQuer
       scoped: true,
       street,
       town: `${district.postnr} ${district.name}`,
-      place: districtSuggestion(district),
+      place: districtSuggestion(index, district),
     };
   }
 
@@ -229,7 +249,7 @@ export function parseAddressQuery(index: PlaceIndex, query: string): AddressQuer
     if (towns[0]) {
       place = townSuggestion(index, towns[0]);
       townName = towns[0].name;
-    } else if (districts[0]) place = districtSuggestion(districts[0]);
+    } else if (districts[0]) place = districtSuggestion(index, districts[0]);
     if (postnrs.length === 0 && evidence) {
       postnrs = towns
         .map((town) => index.postal[town.postal]?.postnr)
@@ -343,15 +363,23 @@ function townSuggestion(index: PlaceIndex, town: Town): PlaceSuggestion {
   };
 }
 
-function districtSuggestion(district: PostalDistrict): PlaceSuggestion {
+/** Where a postal district is: its main town, at a zoom that shows the town
+ * (the middle of its box can be in the sea: 6857 Blåvand's is 60 km out in
+ * the North Sea, Bornholm's west of the island). Only a district with no town
+ * at all falls back to the middle of its box. */
+export function districtPoint(
+  index: PlaceIndex,
+  district: PostalDistrict,
+): { target: [number, number]; zoom: number } {
+  const town = index.mainTown.get(district.postnr);
+  if (town) return { target: [town.lon, town.lat], zoom: Math.min(13, townZoom(town.radiusKm)) };
   const [w, s, e, n] = district.bbox;
+  return { target: [(w + e) / 2, (s + n) / 2], zoom: districtZoom(district.bbox) };
+}
+
+function districtSuggestion(index: PlaceIndex, district: PostalDistrict): PlaceSuggestion {
   const label = `${district.postnr} ${district.name}`;
-  return {
-    text: label,
-    label,
-    target: [(w + e) / 2, (s + n) / 2],
-    zoom: districtZoom(district.bbox),
-  };
+  return { text: label, label, ...districtPoint(index, district) };
 }
 
 /**
@@ -373,7 +401,7 @@ export function matchPlaces(
   const number = /^(\d{4})(?:\s*,?\s+(.*))?$/.exec(typed);
   if (number) {
     const district = index.byPostnr.get(number[1]);
-    return district ? [{ ...districtSuggestion(district), rank: 0 }] : [];
+    return district ? [{ ...districtSuggestion(index, district), rank: 0 }] : [];
   }
   const key = normalizeName(typed);
   if (key.length < 3 || /\d/.test(key)) return [];
@@ -391,7 +419,7 @@ export function matchPlaces(
     keys.push(index.names[i]);
   if (keys.length === 0) keys = nearNames(index, key);
 
-  const candidates: { s: PlaceSuggestion; rank: number[] }[] = [];
+  const candidates: { s: PlaceSuggestion; rank: number[]; district?: boolean }[] = [];
   for (const name of keys) {
     const exact = name === key || keys.length === 1 ? 0 : 1;
     const towns = index.townsByName.get(name) ?? [];
@@ -403,9 +431,16 @@ export function matchPlaces(
         rank: [exact, knownBy(index.postal, town) ? 0 : 1 + town.type, -town.radiusKm],
       });
     }
-    if (towns.length === 0) {
+    // A district of the name, when no town the name means is there: after
+    // towns that are the name's, before the rest; and first when towns of
+    // the name lie only elsewhere (9940 Læsø before the hamlet on Lolland).
+    if (!towns.some((town) => knownBy(index.postal, town))) {
       for (const district of index.postalByName.get(name) ?? []) {
-        candidates.push({ s: districtSuggestion(district), rank: [exact, 0.5, 0] });
+        candidates.push({
+          s: districtSuggestion(index, district),
+          rank: [exact, towns.length > 0 ? -1 : 0.5, 0],
+          district: true,
+        });
       }
     }
   }
@@ -415,14 +450,21 @@ export function matchPlaces(
   if (!meant && key.length >= 4) {
     for (const district of index.postal) {
       if (normalizeName(district.name).endsWith(` ${key}`)) {
-        candidates.push({ s: districtSuggestion(district), rank: [0, 0.5, 0] });
+        candidates.push({
+          s: districtSuggestion(index, district),
+          rank: [0, 0.5, 0],
+          district: true,
+        });
       }
     }
   }
-  const townKeys = candidates.filter((c) => c.rank[1] !== 0.5).map((c) => normalizeName(c.s.label));
+  // no district of a city's parts when the city itself is offered ("Aarhus")
+  const townKeys = candidates
+    .filter((c) => !c.district && c.rank[1] === 0)
+    .map((c) => normalizeName(c.s.label));
   const kept = candidates.filter(
     (c) =>
-      c.rank[1] !== 0.5 ||
+      !c.district ||
       !townKeys.some((t) => normalizeName(c.s.label.replace(/^\d{4} /, "")).startsWith(t)),
   );
   kept.sort((a, b) => a.rank[0] - b.rank[0] || a.rank[1] - b.rank[1] || a.rank[2] - b.rank[2]);
@@ -477,10 +519,7 @@ export function splitTown(
     const district = index.postalByName.get(key)?.[0];
     let at: [number, number] | null = null;
     if (town) at = [town.lon, town.lat];
-    else if (district) {
-      const [w, s, e, n] = district.bbox;
-      at = [(w + e) / 2, (s + n) / 2];
-    }
+    else if (district) at = districtPoint(index, district).target;
     if (at) {
       const proper = town?.name ?? district?.name ?? name;
       return { rest: tokens.slice(0, tokens.length - k).join(" "), at, town: proper };

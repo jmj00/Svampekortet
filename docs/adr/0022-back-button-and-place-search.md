@@ -114,6 +114,12 @@ over a `HistoryLike`. Both are tested with a fake history.
   first among those of its name. A postal district is found by its last
   word as well ("Lyngby" → 2800 Kongens Lyngby) when no town the name means
   is there.
+  A postal district is placed at its main town (the town of its own name,
+  else its largest town), at a zoom that shows the town. The middle of its
+  box can be in the sea: 6857 Blåvand's lies 60 km out in the North Sea,
+  and 46 districts' middles are more than 8 km from any of their towns.
+  When towns of a name lie only outside the district of that name, the
+  district is listed first ("Læsø" → 9940 Læsø, not the hamlet on Lolland).
   A query that is just a town's or a district's name asks the address
   service nothing: it would only answer with streets that sound alike.
   - "Silkeborg" gives the town, "8600" gives the district, and "Rold" gives
