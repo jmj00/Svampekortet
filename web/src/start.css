@@ -1162,6 +1162,12 @@
   font-weight: 600;
 }
 
+/* A town or postal district: the same icon gap, in the address weight. */
+.place__results li[data-kind="place"],
+#results li[data-kind="place"] {
+  gap: 0.55rem;
+}
+
 .place-icon {
   flex: none;
   width: 1.25rem;

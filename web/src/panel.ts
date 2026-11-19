@@ -86,6 +86,18 @@ export class SpeciesPanel {
     return this.open(species);
   }
 
+  /** The species whose page is open, or null while the list shows. */
+  openSlug(): string | null {
+    return this.container.dataset.view === "detail" ? (this.currentDoc?.slug ?? null) : null;
+  }
+
+  /** Back to the list from a species page, as its own back button does. */
+  closeDetail(): void {
+    if (this.container.dataset.view !== "detail") return;
+    this.renderList();
+    this.focusOpenedRow();
+  }
+
   /** Core-tier species matching the current search/chip filter — so "forests
    * near me" can rank against the same subset the user is currently browsing
    * (e.g. only kantarel species, if that's what's searched). */

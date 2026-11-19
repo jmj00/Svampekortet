@@ -269,3 +269,22 @@ describe("matchForests", () => {
     expect(names("findes ikke")).toEqual([]);
   });
 });
+
+describe("matchForests near a town", () => {
+  const forests = [
+    { name: "Vesterskov", lon: 9.52, lat: 56.14, area_m2: 1e5 },
+    { name: "Vesterskov", lon: 10.9, lat: 55.4, area_m2: 9e6 },
+    { name: "Nørre Vesterskov", lon: 9.6, lat: 56.2, area_m2: 1e5 },
+    { name: "Østerskov", lon: 9.53, lat: 56.15, area_m2: 1e5 },
+  ];
+
+  it("lists every forest of the name near the town, the nearest first", () => {
+    const near = matchForests(forests, "Vesterskov", 4, [9.551, 56.181]);
+    expect(near.map((f) => [f.name, f.lon])).toEqual([
+      ["Vesterskov", 9.52],
+      ["Nørre Vesterskov", 9.6],
+    ]);
+    // without a town the largest of the name stands for it
+    expect(matchForests(forests, "Vesterskov")[0].lon).toBe(10.9);
+  });
+});

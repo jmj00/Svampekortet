@@ -3,17 +3,22 @@
 // main interface (#q) and by the start screen's "where?" step, which also
 // feeds it named forests and shows what became of each search.
 
-import { searchAddresses } from "./addresses";
+import { searchAddresses, searchTowns } from "./addresses";
 
 export interface AddressCombobox {
   /** Close the suggestions and drop any search still on its way. */
   close(): void;
 }
 
-/** A suggestion that does not come from the address service (a named forest). */
+/** A suggestion that does not come from the address service (a named forest,
+ * a town). */
 export interface LocalSuggestion {
   text: string;
   target: [number, number];
+  /** The name it goes by once chosen, when not `text`. */
+  label?: string;
+  /** How close to fly, when the kind does not say. */
+  zoom?: number;
 }
 
 /** What became of the last search, for a caller that tells the user:
@@ -26,10 +31,12 @@ export type SearchOutcome =
   | { state: "idle" | "results" | "empty"; query: string }
   | { state: "failed"; query: string; shown: number };
 
-type SuggestionKind = "address" | "local";
+export type SuggestionKind = "address" | "local" | "place";
 
 interface Item {
   text: string;
+  label?: string;
+  zoom?: number;
   target: [number, number];
   kind: SuggestionKind;
 }
@@ -41,15 +48,18 @@ export function attachAddressCombobox(opts: {
   input: HTMLInputElement;
   /** Must carry an id; the input should name it in aria-controls. */
   listbox: HTMLUListElement;
-  /** A suggestion was chosen: its position as [lon, lat], its text, and
-   * whether it was an address or one of the caller's own suggestions. */
-  onSelect: (target: [number, number], text: string, kind: SuggestionKind) => void;
+  /** A suggestion was chosen: its position as [lon, lat], its name, what
+   * kind it was (an address, one of the caller's own, a town) and, for a
+   * town, how close to fly. */
+  onSelect: (target: [number, number], text: string, kind: SuggestionKind, zoom?: number) => void;
   /** Enter with nothing highlighted takes the first suggestion. */
   enterPicksFirst?: boolean;
   /** Suggestions of the caller's own, listed above the addresses. */
   local?: (query: string) => LocalSuggestion[];
   /** Markup put in front of a local suggestion's text (a static icon). */
   localIcon?: string;
+  /** Markup put in front of a town or postal district (a static icon). */
+  placeIcon?: string;
   /** Told after every search, and when a suggestion is chosen. */
   onOutcome?: (outcome: SearchOutcome) => void;
 }): AddressCombobox {
@@ -69,10 +79,11 @@ export function attachAddressCombobox(opts: {
 
   function select(item: Item | undefined): void {
     if (!item) return;
-    input.value = item.text;
+    const name = item.label ?? item.text;
+    input.value = name;
     closeResults();
     opts.onOutcome?.({ state: "idle", query: "" });
-    onSelect(item.target, item.text, item.kind);
+    onSelect(item.target, name, item.kind, item.zoom);
   }
 
   function highlight(next: number): void {
@@ -103,6 +114,9 @@ export function attachAddressCombobox(opts: {
       if (item.kind === "local") {
         li.dataset.kind = "local";
         if (opts.localIcon) li.insertAdjacentHTML("afterbegin", opts.localIcon); // static markup
+      } else if (item.kind === "place") {
+        li.dataset.kind = "place";
+        if (opts.placeIcon) li.insertAdjacentHTML("afterbegin", opts.placeIcon); // static markup
       }
       li.append(document.createTextNode(item.text));
       li.addEventListener("mousedown", (e) => e.preventDefault()); // keep focus on the input
@@ -118,9 +132,14 @@ export function attachAddressCombobox(opts: {
     inFlight = request;
     const query = input.value.trim();
 
-    const local: Item[] = (opts.local?.(query) ?? []).map((s) => ({ ...s, kind: "local" }));
+    const forests: Item[] = (opts.local?.(query) ?? []).map((s) => ({ ...s, kind: "local" }));
     // The caller's own suggestions need no network: show them straight away.
-    if (local.length > 0) render(local);
+    if (forests.length > 0) render(forests);
+    // Towns and postal districts come from the app's own list (fetched once).
+    const places: Item[] = (await searchTowns(query)).map((s) => ({ ...s, kind: "place" }));
+    if (request.signal.aborted) return;
+    const local = [...forests, ...places];
+    if (places.length > 0) render(local);
 
     let addresses: Item[] = [];
     let failed = false;

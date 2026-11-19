@@ -10,6 +10,7 @@ import { ForestOutlines } from "./forestoutlines";
 import { createForestScores } from "./forestscores";
 import { forestAtPin, pinForest } from "./forests";
 import { createMap, type MapBundle } from "./map";
+import { initNavigation, type Navigation, type Snapshot } from "./nav";
 import { loadModelBundle, type ModelBundle } from "./model";
 import { createPinMarker, labelPinMarker } from "./mappin";
 import {
@@ -120,6 +121,8 @@ mapReady
   .catch((err) => console.error("map failed to load", err));
 
 let panel: SpeciesPanel | null = null;
+/** The browser history (nav.ts); set up once the rest of the page is. */
+let navigation: Navigation | null = null;
 let pinLngLat: [number, number] | null = null;
 /** The open species, while it has a score at the pin (panel.ts): the map
  * then draws the ring and colours the forests by their score for it. */
@@ -438,6 +441,7 @@ new MutationObserver(() => {
   const view = panelEl.dataset.view;
   const from = lastView;
   lastView = view;
+  navigation?.record(); // a species page opened or closed: Back follows (nav.ts)
   if (view === from) return; // a re-render of the same view
   if (view === "detail") {
     fullBeforeDetail = sheet.snap() === "full";
@@ -658,10 +662,16 @@ function choosePlace(target: [number, number], text: string, zoom = ADDRESS_ZOOM
 }
 
 /** A forest or an address was chosen, in either search field. */
-function onPlaceChosen(target: [number, number], text: string, kind: PlaceKind): void {
-  choosePlace(target, text, kind === "forest" ? FOREST_ZOOM : ADDRESS_ZOOM);
+function onPlaceChosen(
+  target: [number, number],
+  text: string,
+  kind: PlaceKind,
+  zoom?: number,
+): void {
+  choosePlace(target, text, zoom ?? (kind === "forest" ? FOREST_ZOOM : ADDRESS_ZOOM));
 }
-const searchForests = (query: string): ForestPoint[] => matchForests(forestPoints, query);
+const searchForests = (query: string, near?: [number, number]): ForestPoint[] =>
+  matchForests(forestPoints, query, 4, near);
 
 const searchStatus = document.getElementById("search-status") as HTMLElement;
 attachPlaceSearch({
@@ -828,6 +838,7 @@ const start = initStart({
   onPlace: onPlaceChosen,
   enter: enterFromStart,
   onViewChange: () => syncMapToStart({ ease: true }),
+  onNavigate: () => navigation?.record(),
 });
 
 // "Home": the wordmark (desktop), the mark in the search field (phone) and the
@@ -844,3 +855,42 @@ if (storedPin) setPin(storedPin.lngLat, restoredLabel(storedPin.label));
 // this settles it (it differs only if what was stored turned out unusable).
 if (shouldShowStart(window.location.search, storedPin)) start.open();
 else start.close();
+
+// --- Back and Forward (nav.ts): the start screen's steps, the start screen
+// over the map, and a species page each get a history entry; the map does not.
+
+/** What the Back button would undo, as the app shows it now. */
+function navSnapshot(): Snapshot {
+  const { view, flow } = start.current();
+  const startView =
+    view === null
+      ? null
+      : view === "place"
+        ? flow === "forests"
+          ? "place-forests"
+          : "place-here"
+        : view;
+  return { start: startView, detail: panel?.openSlug() ?? null };
+}
+
+/** Show what an older (or, going forward, newer) entry showed. */
+async function applyNavSnapshot(snap: Snapshot): Promise<void> {
+  if (snap.start === null) {
+    if (start.isOpen()) leaveStart();
+  } else {
+    if (snap.start === "home") start.show("home");
+    else if (snap.start === "species") start.show("species");
+    else start.show("place", snap.start === "place-forests" ? "forests" : "here");
+    syncMapToStart();
+  }
+  const p = await panelReady.catch(() => null);
+  if (!p || p.openSlug() === snap.detail) return;
+  if (snap.detail === null) {
+    p.closeDetail();
+    return;
+  }
+  if (snap.start === null) showTab("svampe");
+  await p.openSpecies(snap.detail);
+}
+
+navigation = initNavigation({ current: navSnapshot, apply: applyNavSnapshot });

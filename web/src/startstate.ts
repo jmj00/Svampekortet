@@ -235,13 +235,44 @@ const placeKey = (text: string): string => text.toLocaleLowerCase("da").replace(
  * called Nørreskov) and the payload has nothing to tell them apart by, so only
  * the largest of each name is offered.
  */
+/** How far from a named town a forest of the typed name may be (km). */
+export const NEAR_TOWN_KM = 20;
+
+function forestsNear<T extends NamedPlace>(
+  forests: readonly T[],
+  wanted: string,
+  [lon, lat]: [number, number],
+  limit: number,
+): T[] {
+  const kx = 111.32 * Math.cos((lat * Math.PI) / 180);
+  const found: { forest: T; km: number; rank: number }[] = [];
+  for (const forest of forests) {
+    const key = placeKey(forest.name);
+    const at = key.indexOf(wanted);
+    if (at < 0) continue;
+    const km = Math.hypot((forest.lon - lon) * kx, (forest.lat - lat) * 110.57);
+    // the name itself first ("Vesterskov"), then names it begins, then the rest
+    const rank = key === wanted ? 0 : at === 0 ? 1 : 2;
+    if (km <= NEAR_TOWN_KM) found.push({ forest, km, rank });
+  }
+  return found
+    .sort((a, b) => a.rank - b.rank || a.km - b.km)
+    .slice(0, limit)
+    .map((f) => f.forest);
+}
+
 export function matchForests<T extends NamedPlace>(
   forests: readonly T[],
   query: string,
   limit = 4,
+  /** A town the forest should be near ("Vesterskov Silkeborg"): then every
+   * forest of the name within NEAR_TOWN_KM counts, the name itself first,
+   * then the nearest. */
+  near?: [number, number],
 ): T[] {
   const wanted = placeKey(query);
   if (wanted.length < 2) return [];
+  if (near) return forestsNear(forests, wanted, near, limit);
   const firstWord = query.trim().toLocaleLowerCase("da");
   const best = new Map<string, { forest: T; rank: number }>();
   for (const forest of forests) {
