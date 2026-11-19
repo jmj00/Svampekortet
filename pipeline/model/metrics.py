@@ -71,3 +71,51 @@ def calibration_curve(
             }
         )
     return out
+
+
+def _auc_np(scores, labels) -> float:
+    """roc_auc on numpy arrays (same tie rule), for the bootstrap's inner loop."""
+    import numpy as np
+
+    _u, inverse, counts = np.unique(scores, return_inverse=True, return_counts=True)
+    avg_rank = np.cumsum(counts) - (counts - 1) / 2  # 1-based mean rank per tie block
+    ranks = avg_rank[inverse]
+    pos = labels == 1
+    n_pos = int(pos.sum())
+    n_neg = len(labels) - n_pos
+    if n_pos == 0 or n_neg == 0:
+        return math.nan
+    return float((ranks[pos].sum() - n_pos * (n_pos + 1) / 2) / (n_pos * n_neg))
+
+
+def auc_gap_se(
+    scores_a: Sequence[float],
+    scores_b: Sequence[float],
+    labels: Sequence[int],
+    *,
+    resamples: int = 200,
+    seed: int = 0,
+) -> float:
+    """Bootstrap standard error of AUC(a) - AUC(b) on the same points: positives
+    and negatives resampled separately (each with replacement), both scores
+    kept paired. Seeded, so the same inputs give the same number."""
+    import numpy as np
+
+    a = np.asarray(scores_a, dtype=float)
+    b = np.asarray(scores_b, dtype=float)
+    y = np.asarray(labels, dtype=int)
+    pos_idx = np.flatnonzero(y == 1)
+    neg_idx = np.flatnonzero(y == 0)
+    if len(pos_idx) == 0 or len(neg_idx) == 0 or resamples < 2:
+        return math.nan
+    rng = np.random.default_rng(seed)
+    gaps = np.empty(resamples)
+    for i in range(resamples):
+        idx = np.concatenate(
+            (
+                rng.choice(pos_idx, size=len(pos_idx), replace=True),
+                rng.choice(neg_idx, size=len(neg_idx), replace=True),
+            )
+        )
+        gaps[i] = _auc_np(a[idx], y[idx]) - _auc_np(b[idx], y[idx])
+    return float(gaps.std(ddof=1))
