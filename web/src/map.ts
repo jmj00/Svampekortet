@@ -1,11 +1,11 @@
 import type {
   Map as MapLibreMap,
-  GeolocateControl,
   RasterLayerSpecification,
   RasterSourceSpecification,
   StyleSpecification,
 } from "maplibre-gl";
 import "./map.css";
+import { LocateControl } from "./locatecontrol";
 import { restyleForestScores } from "./forestscores";
 import { legendFor } from "./maplegend";
 import { enableFindCard, restyleObservations } from "./observations";
@@ -162,7 +162,7 @@ function fallBackToOsmOnError(map: MapLibreMap): void {
 
 export interface MapBundle {
   map: MapLibreMap;
-  geolocate: GeolocateControl;
+  geolocate: LocateControl;
   /** The loaded module namespace, so callers can `new maplibregl.Marker(...)`
    *  without a second static import of the library. */
   maplibregl: typeof import("maplibre-gl");
@@ -193,9 +193,11 @@ export async function createMap(
     attributionControl: { compact: true },
   });
 
-  const geolocate = new maplibregl.GeolocateControl({
-    positionOptions: { enableHighAccuracy: true },
-    trackUserLocation: true,
+  // One position per press, not a follow mode, and no camera move of its own
+  // (locatecontrol.ts, locate.ts): the app flies to an answer it takes.
+  const geolocate = new LocateControl({
+    positionOptions: { enableHighAccuracy: true, timeout: 20000 },
+    makeMarker: (element) => new maplibregl.Marker({ element }),
   });
 
   map.addControl(new maplibregl.NavigationControl(), "top-right");
