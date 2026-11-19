@@ -38,6 +38,26 @@ switch all reopen it.
   forest payload) above the addresses.
 - Everything on it comes from the manifest (species, photos, what is in season
   this month); nothing is hard-coded.
+- **Back and Forward** (`src/nav.ts`): a step of the start screen, the start
+  screen opened from the map, and a species page each get a browser history
+  entry, so Android's Back and iOS's edge swipe undo them instead of leaving
+  the site. The map (pin, camera), the sheet and the Svampe/Skove tabs get
+  none. A reload shows the entry it reloaded (a step, a species page). See
+  `../docs/adr/0022-back-button-and-place-search.md`.
+
+## Place search
+
+One field (`src/placesearch.ts`) finds named forests (the forest payload),
+towns and postal districts (`src/data/places.json`, built by
+`scripts/gen-places.mjs` from Danske Stednavne and DAGI), and addresses
+(Adressevælgeren, `src/addresses.ts`), in that order. A town or postal
+number after an address ("Vestergade 10 Silkeborg") is turned into the
+postal number the address service filters on (`src/placeindex.ts`). Only the
+typed text goes to the service. Rebuild the town list with
+`node scripts/gen-places.mjs` (reads `VITE_DATAFORDELER_API_KEY` from
+`.env.local`; about two minutes). The list in the repository was built on 2026-11-19 (its `generated`
+field says when). Rebuild it at least once a year: postal districts change a
+few times a year, Danske Stednavne (frozen since 2025-09) whenever it resumes.
 
 ## Forests
 

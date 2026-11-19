@@ -1162,6 +1162,27 @@
   font-weight: 600;
 }
 
+/* "Ingen Hovedgaden 1 i Rold – adresser andre steder:" above addresses found
+   elsewhere than in the town typed. A line, not a choice. */
+.place__results li.results-note,
+#results li.results-note {
+  min-height: 0;
+  margin-top: 0.25rem;
+  padding: 0.45rem 0.75rem 0.2rem;
+  border-top: 1px solid var(--border);
+  border-radius: 0;
+  color: var(--muted);
+  font-size: var(--text-sm);
+  cursor: default;
+  background: none;
+}
+
+/* A town or postal district: the same icon gap, in the address weight. */
+.place__results li[data-kind="place"],
+#results li[data-kind="place"] {
+  gap: 0.55rem;
+}
+
 .place-icon {
   flex: none;
   width: 1.25rem;

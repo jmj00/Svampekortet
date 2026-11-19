@@ -301,6 +301,10 @@ export function openAbout(manifest: Manifest, scrollTo?: AboutSection): void {
     ["Vejr", manifest.attribution.weather],
     ["Kort", manifest.attribution.basemap],
     ["Skove", manifest.attribution.forests],
+    [
+      "Søgning",
+      "Adresser: Adressevælgeren. Byer og postnumre: Danske Stednavne og DAGI. Alle fra Klimadatastyrelsen via Datafordeler.",
+    ],
     ["Rødliste", manifest.attribution.redlist],
   ];
   for (const [term, value] of entries) {

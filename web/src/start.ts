@@ -66,14 +66,19 @@ export interface StartDeps {
   cancelLocate(): void;
   /** Named forests matching what is typed in the place search (may be none
    * while the forests are still loading). */
-  searchForests(query: string): { name: string; lon: number; lat: number }[];
+  searchForests(
+    query: string,
+    near?: [number, number],
+  ): { name: string; lon: number; lat: number }[];
   /** A forest or an address was chosen in the place step. */
-  onPlace(target: [number, number], text: string, kind: PlaceKind): void;
+  onPlace(target: [number, number], text: string, kind: PlaceKind, zoom?: number): void;
   /** Go into the main interface. For a species the result says whether its
    * page could be opened; the layer stays up until it has. */
   enter(landing: Landing): void | Promise<boolean>;
   /** The layer changed view or geometry by itself (not through open/close). */
   onViewChange(): void;
+  /** The view shown changed, by any route (for the browser history, nav.ts). */
+  onNavigate?(): void;
 }
 
 export interface StartScreen {
@@ -88,6 +93,11 @@ export interface StartScreen {
    * offers the way "back" to the map. */
   open(options?: { fromMain?: boolean }): void;
   close(): void;
+  /** The view showing (null when closed), and the flow a place step is for. */
+  current(): { view: StartView | null; flow: PlaceFlow | null };
+  /** Show a view as Back or Forward brings it back: opens the layer (as from
+   * the map) if it is closed. */
+  show(view: StartView, flow?: PlaceFlow): void;
   /** Phone only: how much of the map the layer covers from the top and the
    * bottom, so the camera can aim at what is left. Null when it covers none
    * (closed, or beside the map on a wide screen). */
@@ -213,6 +223,7 @@ export function initStart(deps: StartDeps): StartScreen {
       root.setAttribute("aria-labelledby", TITLE_IDS[next]);
     }
     applyInert();
+    deps.onNavigate?.();
   }
 
   /** Mark the layer as arriving or leaving for the length of the animation
@@ -765,6 +776,21 @@ export function initStart(deps: StartDeps): StartScreen {
       pending = null;
       setView(null);
       transition(wasOpen ? "leaving" : null);
+    },
+    current: () => ({ view, flow: view === "place" ? pending : null }),
+    show(next, flow): void {
+      if (view === null) {
+        stopLocating();
+        combobox?.close();
+        pending = null;
+        refreshHome();
+        skipLabel.textContent = SKIP_LABEL.back;
+        setView("home");
+        transition("entering");
+      }
+      if (next === "home") goHome();
+      else if (next === "place") showPlace(flow ?? "here");
+      else showSpecies();
     },
     mapCover(): { top: number; bottom: number } | null {
       if (view === null || !phone.matches) return null;

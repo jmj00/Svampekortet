@@ -5,9 +5,13 @@
 // the two cannot drift apart.
 
 import { attachAddressCombobox, type AddressCombobox, type SearchOutcome } from "./addresscombo";
+import { loadedPlaceIndex, loadPlaceIndex, splitTown } from "./placeindex";
 
 /** What was chosen: decides how close the map goes. */
-export type PlaceKind = "address" | "forest";
+export type PlaceKind = "address" | "forest" | "town";
+
+const ICON_TOWN =
+  '<svg class="place-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3.5 20.5V11l5-3.5 5 3.5v9.5M13.5 20.5V8.5l4-3 3 2.2v12.8M2.5 20.5h19M7 14h3M7 17h3M16.5 11h1.5M16.5 14h1.5M16.5 17h1.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
 const ICON_TREE =
   '<svg class="place-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.8l4.3 5.7h-2.1l4.3 5.5h-2.3l3.3 4H4.5l3.3-4H5.5l4.3-5.5H7.7z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 18v3.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
@@ -21,14 +25,45 @@ export function searchMessage(outcome: SearchOutcome, verb: "tryk" | "klik"): st
   const query = outcome.query;
   if (outcome.state === "failed") {
     return outcome.shown > 0
-      ? "Adressesøgningen svarer ikke lige nu, så her er kun skove."
+      ? "Adressesøgningen svarer ikke lige nu, så her er kun skove og byer."
       : `Adressesøgningen svarer ikke lige nu. Tjek forbindelsen, og prøv igen – eller ${verb} på kortet.`;
   }
   if (outcome.state !== "empty") return "";
   // The address service wants three characters; forests are matched from two.
   return query.length < 3
     ? `Ingen skove matcher „${query}“. Skriv lidt mere for også at søge adresser.`
-    : `Ingen skove eller adresser matcher „${query}“. Prøv et vejnavn, fx „Vestergade, Silkeborg“, eller ${verb} på kortet.`;
+    : `Ingen skove, byer eller adresser matcher „${query}“. Prøv et vejnavn med by, fx „Vestergade 10, Silkeborg“, eller ${verb} på kortet.`;
+}
+
+/** How well a name matches what is typed: 0 it is the name, 1 the name or
+ * one of its words begins with it, 2 it is inside a word ("Trold…" for
+ * "rold"). */
+export function nameRank(name: string, query: string): number {
+  const key = (s: string): string =>
+    s
+      .toLocaleLowerCase("da")
+      .replace(/aa/g, "å")
+      .replace(/[\s\-.,]+/g, " ")
+      .trim();
+  const n = key(name);
+  const q = key(query);
+  if (!q) return 2;
+  if (n === q || n.replace(/ /g, "") === q.replace(/ /g, "")) return 0;
+  if (n.startsWith(q) || n.split(" ").some((word) => word.startsWith(q))) return 1;
+  return 2;
+}
+
+/** "3 km fra Silkeborg", "i Silkeborg" under a kilometre. */
+export function distanceText(
+  { lon, lat }: { lon: number; lat: number },
+  [tlon, tlat]: [number, number],
+  town: string,
+): string {
+  const km = Math.hypot(
+    (lon - tlon) * 111.32 * Math.cos((tlat * Math.PI) / 180),
+    (lat - tlat) * 110.57,
+  );
+  return km < 1 ? `i ${town}` : `${Math.round(km)} km fra ${town}`;
 }
 
 export function attachPlaceSearch(opts: {
@@ -37,9 +72,14 @@ export function attachPlaceSearch(opts: {
   listbox: HTMLUListElement;
   /** Where the message goes; must carry an id. Hidden while there is none. */
   status: HTMLElement;
-  /** Named forests matching what is typed (may be none while they load). */
-  searchForests: (query: string) => { name: string; lon: number; lat: number }[];
-  onPlace: (target: [number, number], text: string, kind: PlaceKind) => void;
+  /** Named forests matching what is typed (may be none while they load);
+   * with `near`, those of the name near that point, the nearest first. */
+  searchForests: (
+    query: string,
+    near?: [number, number],
+  ) => { name: string; lon: number; lat: number }[];
+  /** `zoom`: how close to fly, for a town or postal district. */
+  onPlace: (target: [number, number], text: string, kind: PlaceKind, zoom?: number) => void;
   /** Enter with nothing highlighted takes the first suggestion. */
   enterPicksFirst?: boolean;
   /** The message appeared, changed or went away (its box changed size). */
@@ -52,7 +92,7 @@ export function attachPlaceSearch(opts: {
   input.spellcheck = false;
   input.setAttribute("aria-label", PLACE_SEARCH_LABEL);
   input.setAttribute("aria-describedby", status.id);
-  listbox.setAttribute("aria-label", "Forslag til skove og adresser");
+  listbox.setAttribute("aria-label", "Forslag til skove, byer og adresser");
   status.setAttribute("role", "status");
   status.hidden = true;
 
@@ -68,17 +108,42 @@ export function attachPlaceSearch(opts: {
     input,
     listbox,
     enterPicksFirst: opts.enterPicksFirst,
-    local: (query) =>
-      opts.searchForests(query).map((forest) => ({
+    local: (query) => {
+      const forests = opts.searchForests(query);
+      // "Vesterskov Silkeborg": the forests of that name near the town
+      const index = forests.length === 0 ? loadedPlaceIndex() : null;
+      const split = index ? splitTown(index, query) : null;
+      if (split && split.rest) {
+        // several forests share a name: say which one by how far from the town
+        return opts.searchForests(split.rest, split.at).map((forest) => ({
+          rank: 0,
+          text: `${forest.name} · ${distanceText(forest, split.at, split.town)}`,
+          label: forest.name,
+          target: [forest.lon, forest.lat] as [number, number],
+        }));
+      }
+      return forests.map((forest) => ({
         text: forest.name,
-        target: [forest.lon, forest.lat],
-      })),
+        target: [forest.lon, forest.lat] as [number, number],
+        rank: nameRank(forest.name, query),
+      }));
+    },
     localIcon: ICON_TREE,
-    onSelect: (target, text, kind) =>
-      opts.onPlace(target, text, kind === "local" ? "forest" : "address"),
+    placeIcon: ICON_TOWN,
+    onSelect: (target, text, kind, zoom) =>
+      opts.onPlace(
+        target,
+        text,
+        kind === "local" ? "forest" : kind === "place" ? "town" : "address",
+        zoom,
+      ),
     onOutcome: (outcome) =>
       say(searchMessage(outcome, finePointer.matches ? "klik" : "tryk"), outcome.state),
   });
+
+  // The town list is fetched when the field is first focused, so the first
+  // search does not wait for it.
+  input.addEventListener("focus", () => void loadPlaceIndex().catch(() => {}), { once: true });
 
   // The message belongs to the search in progress: it goes when the field is
   // left (as the suggestions do), and an emptied field searches to "idle".
