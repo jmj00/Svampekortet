@@ -9,7 +9,7 @@ import { initForestFinder } from "./forestfinder";
 import { ForestOutlines } from "./forestoutlines";
 import { createForestScores } from "./forestscores";
 import { forestAtPin, pinForest } from "./forests";
-import { createLocateGate } from "./locate";
+import { createLocateGate, LOCATION_DENIED_MESSAGE } from "./locate";
 import { createMap, type MapBundle } from "./map";
 import { initNavigation, type Navigation, type Snapshot } from "./nav";
 import { loadModelBundle, type ModelBundle } from "./model";
@@ -95,6 +95,12 @@ mapReady
       .getContainer()
       .querySelector(".maplibregl-ctrl-geolocate")
       ?.addEventListener("click", () => locateGate.asked(), { capture: true });
+    // A refusal: say so, instead of a button that does nothing.
+    geolocate.on("error", (e) => {
+      if ((e as unknown as GeolocationPositionError).code !== 1 || start.isOpen()) return;
+      locateGate.superseded();
+      showLocateMessage(LOCATION_DENIED_MESSAGE);
+    });
     map.on("moveend", () => prefetchOutlines(map));
     map.on("click", (e) => {
       // The start screen's species step asks for a species, not a place.
@@ -676,6 +682,21 @@ attachPlaceSearch({
 });
 document.getElementById("search")?.addEventListener("submit", (e) => e.preventDefault());
 
+/** A word about "my location" in the search field's message line, for a
+ * while (the place search takes the line back as soon as it is used). */
+function showLocateMessage(text: string): void {
+  searchStatus.textContent = text;
+  searchStatus.dataset.state = "locate";
+  searchStatus.hidden = false;
+  appRoot.style.setProperty("--search-status-h", `${searchStatus.offsetHeight + 6}px`);
+  window.setTimeout(() => {
+    if (searchStatus.dataset.state !== "locate") return;
+    searchStatus.hidden = true;
+    searchStatus.textContent = "";
+    appRoot.style.setProperty("--search-status-h", "0px");
+  }, 7000);
+}
+
 // --- start screen (start.ts): four ways in, each landing in the interface
 // above already set up for the task ---
 
@@ -689,6 +710,10 @@ function afterPin(source: PinSource, lngLat: [number, number], zoom = ADDRESS_ZO
     return;
   }
   if (source === "address") void flyToPlace(lngLat, zoom).then(() => forestFinder.pinMoved());
+  // the button does not move the camera itself (locatecontrol.ts): fly to an
+  // answer that was taken, the same as to an address
+  else if (source === "locate")
+    void flyTo(lngLat, ADDRESS_ZOOM).then(() => forestFinder.pinMoved());
   else forestFinder.pinMoved();
 }
 
@@ -737,9 +762,8 @@ function landWithPin(
       applyMapPadding(map);
       if (flow !== "here") return;
       if (source === "address") void flyToPlace(lngLat, zoom);
-      // On a phone, re-aiming the map just now stopped the geolocate control's
-      // own flight to the position: fly there ourselves.
-      else if (source === "locate" && phone) void flyTo(lngLat, ADDRESS_ZOOM);
+      // The location button does not move the camera (locatecontrol.ts).
+      else if (source === "locate") void flyTo(lngLat, ADDRESS_ZOOM);
     },
     () => {},
   );

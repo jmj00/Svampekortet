@@ -12,11 +12,14 @@
 // two presses or more to get rid of it (the bug as reported from a phone; a
 // desktop's position hardly ever updates, so it did not show there).
 //
-// The control is now set up without tracking (map.ts): each press asks for one
-// position, moves the camera there once and fires "geolocate" once. This
-// module decides what that one answer may do: set the pin, unless the user
-// has chosen a spot of their own since asking (a slow fix must not undo a
-// tap), or has given up on it (the start screen's place step).
+// The button is now one of our own (locatecontrol.ts): each press asks for one
+// position, shows it as a dot and announces it, and moves nothing. This
+// module decides what that one answer may do: set the pin and fly there,
+// unless the user has chosen a spot of their own since asking (a slow
+// cold-start fix must neither undo a tap nor take the view away from it), or
+// has given up on it (the start screen's place step).
+//
+// LOCATION_DENIED_MESSAGE is said when the browser will not tell.
 
 export interface LocateGate {
   /** A position was asked for (the button, or the app on the user's behalf). */
@@ -28,6 +31,11 @@ export interface LocateGate {
    * answer to a request does. */
   accept(): boolean;
 }
+
+/** Said after a press of "my location" the browser refused (permission
+ * denied): otherwise the button just does nothing. */
+export const LOCATION_DENIED_MESSAGE =
+  "Placering er slået fra for siden. Slå den til i browserens indstillinger, eller tryk på kortet.";
 
 export function createLocateGate(): LocateGate {
   let waiting = false;
