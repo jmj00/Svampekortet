@@ -106,7 +106,14 @@ over a `HistoryLike`. Both are tested with a fake history.
   village and Rold Skov first, "København" the city above Københavnerskoven,
   and "Rold Skov" the forest first. No two suggestions read the same: a
   second town of a name, or one that shares a forest's name, says its postal
-  district ("Frederiksberg · 4180 Sorø"); only the city keeps its bare name.
+  district ("Frederiksberg · 4180 Sorø"). The bare name goes only to the
+  town the name means: one that lies in the postal district of its own name
+  (Hellerup in 2900 Hellerup, not the hamlet of that name in 5750 Ringe; 213
+  villages share a district's name while lying in another), or a city,
+  whose middle may lie in any of its districts. That town is also listed
+  first among those of its name. A postal district is found by its last
+  word as well ("Lyngby" → 2800 Kongens Lyngby) when no town the name means
+  is there.
   A query that is just a town's or a district's name asks the address
   service nothing: it would only answer with streets that sound alike.
   - "Silkeborg" gives the town, "8600" gives the district, and "Rold" gives

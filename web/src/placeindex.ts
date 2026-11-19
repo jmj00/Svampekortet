@@ -88,7 +88,14 @@ export function buildPlaceIndex(raw: RawPlaces): PlaceIndex {
     townsByName.set(key, list);
   }
   for (const list of townsByName.values()) {
-    list.sort((a, b) => a.type - b.type || b.radiusKm - a.radiusKm);
+    // the one the name is known for first (Hellerup in 2900 Hellerup, not the
+    // hamlet of that name on Funen), then towns before parts of towns, larger first
+    list.sort(
+      (a, b) =>
+        Number(knownBy(postal, b)) - Number(knownBy(postal, a)) ||
+        a.type - b.type ||
+        b.radiusKm - a.radiusKm,
+    );
   }
   const postalByName = new Map<string, PostalDistrict[]>();
   for (const district of postal) {
@@ -293,12 +300,28 @@ export function districtZoom([w, s, e, n]: [number, number, number, number]): nu
   return Math.round(Math.min(13, Math.max(8.5, zoom)) * 2) / 2;
 }
 
+/**
+ * Whether the name means this town: it lies in the postal district of its own
+ * name ("Hellerup" in 2900 Hellerup, "Aarhus" for 8000 Aarhus C), or it is a
+ * city, whose middle may lie in any of its districts (Aarhus's in 8230
+ * Åbyhøj). A hamlet that shares a district's name but lies elsewhere (the
+ * Hellerup in 5750 Ringe) is not.
+ */
+export function knownBy(postal: readonly PostalDistrict[], town: Town): boolean {
+  if (town.type === 2) return false;
+  if (town.type === 0 && town.radiusKm >= 2) return true;
+  const district = postal[town.postal];
+  if (!district) return false;
+  const key = normalizeName(town.name);
+  const own = normalizeName(district.name);
+  return own === key || own.startsWith(`${key} `);
+}
+
 function townSuggestion(index: PlaceIndex, town: Town): PlaceSuggestion {
   const district = index.postal[town.postal];
   let text = town.name;
-  // A city is known by its name: its middle may lie in any of its districts
-  // (Aarhus's in 8230 Åbyhøj), so no district is named for it.
-  const city = town.type === 0 && (town.radiusKm >= 2 || hasDistricts(index, town.name));
+  // Known by its name alone (knownBy); any other town of the name says where.
+  const city = knownBy(index.postal, town);
   let full = town.name;
   if (district) {
     full =
@@ -318,15 +341,6 @@ function townSuggestion(index: PlaceIndex, town: Town): PlaceSuggestion {
     target: [town.lon, town.lat],
     zoom: townZoom(town.radiusKm),
   };
-}
-
-/** Whether the town's name is that of postal districts ("Aarhus C"). */
-function hasDistricts(index: PlaceIndex, name: string): boolean {
-  const key = normalizeName(name);
-  return index.postal.some((p) => {
-    const n = normalizeName(p.name);
-    return n === key || n.startsWith(`${key} `);
-  });
 }
 
 function districtSuggestion(district: PostalDistrict): PlaceSuggestion {
@@ -385,12 +399,23 @@ export function matchPlaces(
     for (const town of shown) {
       candidates.push({
         s: townSuggestion(index, town),
-        rank: [exact, town.type, -town.radiusKm],
+        // the town the name means, then postal districts, then the rest
+        rank: [exact, knownBy(index.postal, town) ? 0 : 1 + town.type, -town.radiusKm],
       });
     }
     if (towns.length === 0) {
       for (const district of index.postalByName.get(name) ?? []) {
         candidates.push({ s: districtSuggestion(district), rank: [exact, 0.5, 0] });
+      }
+    }
+  }
+  // "Lyngby" for 2800 Kongens Lyngby: a district whose last word is what was
+  // typed, unless a town the name means is already there
+  const meant = (index.townsByName.get(key) ?? []).some((town) => knownBy(index.postal, town));
+  if (!meant && key.length >= 4) {
+    for (const district of index.postal) {
+      if (normalizeName(district.name).endsWith(` ${key}`)) {
+        candidates.push({ s: districtSuggestion(district), rank: [0, 0.5, 0] });
       }
     }
   }

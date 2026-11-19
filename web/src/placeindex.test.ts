@@ -276,6 +276,35 @@ describe("the published list", () => {
     ]);
   });
 
+  it("gives the bare name to the town a name means, not to a hamlet of that name", () => {
+    const first = (q: string) => matchPlaces(real, q)[0];
+    // Hellerup north of Copenhagen, not the hamlet in 5750 Ringe on Funen
+    expect(first("Hellerup").text).toBe("Hellerup");
+    expect(first("Hellerup").target[0]).toBeGreaterThan(12.4);
+    expect(matchPlaces(real, "Hellerup")[1].text).toBe("Hellerup · 5750 Ringe");
+    // Askeby on Møn (4792 Askeby), not the village on Funen
+    expect(first("Askeby").text).toBe("Askeby");
+    expect(first("Askeby").target[0]).toBeGreaterThan(12);
+    expect(matchPlaces(real, "Askeby").map((s) => s.text)).toContain("Askeby · 5471 Søndersø");
+    // and those that were right stay right
+    for (const [q, east] of [
+      ["Frederiksberg", true],
+      ["Assens", false],
+      ["Anholt", true],
+      ["Almind", false],
+      ["Agerskov", false],
+    ] as const) {
+      const s = first(q);
+      expect(s.text).toBe(q);
+      if (east) expect(s.target[0]).toBeGreaterThan(11);
+    }
+    expect(first("Anholt").target[1]).toBeGreaterThan(56.6); // the island
+  });
+
+  it("finds a postal district by its last word", () => {
+    expect(matchPlaces(real, "Lyngby")[0].text).toBe("2800 Kongens Lyngby");
+  });
+
   it("puts every town inside Denmark", () => {
     for (const town of real.towns) {
       expect(town.lon).toBeGreaterThan(7.9);
