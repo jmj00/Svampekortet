@@ -63,4 +63,6 @@ SELECT
     recent.precip_60d_days_covered,
     prior_summer.prior_summer_days_covered
 FROM recent
-LEFT JOIN prior_summer USING (sample_id);
+LEFT JOIN prior_summer USING (sample_id)
+-- fixed order: ties in precision@k and the isotonic calibrator depend on it
+ORDER BY sample_id;
