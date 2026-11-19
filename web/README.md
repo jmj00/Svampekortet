@@ -94,6 +94,15 @@ The app reads a static payload from `VITE_DATA_BASE` (default `/data`, i.e.
   `python -m pipeline.model.fit --out build/publish` run
 
 The sample docs are heavily downsampled, so dev scores are illustrative, not real.
+Its weather covers only part of the country and most places have no nearby
+finds, so many pins score 0 for reasons that say nothing about the app.
+
+To check behaviour that depends on real scores, forests or weather, run against
+the published payload instead (it is served with `Access-Control-Allow-Origin: *`):
+
+```sh
+npm run dev:live   # vite --mode live; reads VITE_DATA_BASE from .env.live
+```
 
 `src/score.ts` is a line-for-line port of `pipeline/model/`; the Python side
 carries the tests.
