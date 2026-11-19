@@ -368,8 +368,11 @@ def run(
             if strict:
                 raise SystemExit("backtest needs observations, observation_weather, weather_daily")
             return BacktestResult(report={"available": False}, calibrators={})
+        # ORDER BY: DuckDB's DISTINCT returns rows in no fixed order, and the
+        # seeded rng picks negatives by index into this list -- unordered, the
+        # same data and seed gave a different negative sample (and AUC) per run.
         cells = con.execute(
-            "SELECT DISTINCT cell_id, cell_lon, cell_lat FROM weather_daily"
+            "SELECT DISTINCT cell_id, cell_lon, cell_lat FROM weather_daily ORDER BY cell_id"
         ).fetchall()
         effort_grid = _load_effort_grid(con)
         host_tree_grid = _load_host_tree_grid(con)
