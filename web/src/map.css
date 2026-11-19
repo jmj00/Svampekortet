@@ -1,0 +1,797 @@
+/* ==========================================================================
+   Map: pin, legend control, find popup (mappin.ts, maplegend.ts,
+   observations.ts). Everything here is drawn over the map canvas. Colours
+   come from the tokens in style.css, including the map tokens (--find...).
+   ========================================================================== */
+
+/* --- the pin ---
+   MapLibre positions .map-pin itself (it owns that element's transform), so
+   the animated parts are children. The tip of the pin body sits on the
+   bottom-centre of the box, which is the marker's anchor. */
+.map-pin {
+  width: 34px;
+  height: 44px;
+  pointer-events: none; /* taps go to the map underneath, e.g. to a find */
+}
+
+.map-pin__body {
+  position: relative;
+  display: block;
+  overflow: visible;
+  filter: drop-shadow(0 2px 2.5px rgb(0 0 0 / 0.38));
+  transform-origin: 50% 100%;
+  animation: map-pin-drop 0.34s cubic-bezier(0.2, 0.9, 0.3, 1.25) both;
+}
+
+.map-pin__shape {
+  fill: var(--accent);
+  stroke: var(--surface);
+  stroke-width: 2;
+  paint-order: stroke;
+}
+
+.map-pin__eye {
+  fill: var(--surface);
+}
+
+/* The spot the pin marks: a small disc on the ground under its tip. */
+.map-pin__ground,
+.map-pin__ripple {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  border-radius: 50%;
+  transform: translate(-50%, 50%);
+}
+
+.map-pin__ground {
+  width: 16px;
+  height: 16px;
+  background: color-mix(in srgb, var(--accent) 30%, transparent);
+  border: 1.5px solid color-mix(in srgb, var(--accent) 75%, transparent);
+}
+
+.map-pin__ripple {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--accent);
+  opacity: 0;
+  animation: map-pin-ripple 0.9s ease-out 0.12s 1 both;
+}
+
+@keyframes map-pin-drop {
+  from {
+    opacity: 0;
+    transform: translateY(-14px) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes map-pin-ripple {
+  from {
+    opacity: 0.85;
+    transform: translate(-50%, 50%) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, 50%) scale(4.5);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .map-pin__body,
+  .map-pin__ripple {
+    animation: none;
+  }
+}
+
+/* --- the map key (maplegend.ts) ---
+   An element inside the map container. It is placed from the covered-area
+   custom properties the shell sets on #app (--map-inset-left / -bottom); the
+   --map-key-* fallbacks are measured by maplegend.ts for layouts without
+   them. Phone: a slim one-line key at the bottom left of the visible map,
+   opposite the locate button. Desktop: a compact card at the bottom right,
+   above the attribution. The full key opens upwards from the line. */
+.map-key {
+  position: absolute;
+  z-index: 2;
+  left: calc(var(--map-inset-left, var(--map-key-left, 0px)) + 0.5rem);
+  bottom: calc(var(--map-inset-bottom, var(--map-key-bottom, 0px)) + 0.5rem);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.4rem;
+  max-width: calc(100% - 4.5rem);
+  pointer-events: none;
+  font-size: 0.8rem;
+  line-height: 1.35;
+  color: var(--ink);
+}
+
+.map-key > * {
+  pointer-events: auto;
+}
+
+.map-key[hidden],
+.map-key [hidden] {
+  display: none;
+}
+
+/* Phone: the scale bar rides the sheet's top edge in the same corner; the
+   key sits above it. With the key open, "Zoom ind" goes beside the key's line
+   instead of above the panel, so the panel keeps the room below the search
+   field. */
+@media (max-width: 719.98px) {
+  .map-key {
+    --map-key-lift: 1.6rem;
+    bottom: calc(
+      var(--map-inset-bottom, var(--map-key-bottom, 0px)) + 0.5rem + var(--map-key-lift)
+    );
+  }
+
+  .map-key[data-open="true"] {
+    display: grid;
+    grid-template-columns: auto auto;
+    justify-content: start;
+  }
+
+  .map-key[data-open="true"] .map-key__panel {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+
+  .map-key[data-open="true"] .map-key__toggle {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .map-key[data-open="true"] .map-key__zoom {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  .map-key[data-open="true"] .map-key__zoom-rest {
+    display: none;
+  }
+}
+
+@media (min-width: 720px) {
+  .map-key {
+    left: auto;
+    right: calc(var(--map-inset-right, 0px) + 10px);
+    bottom: calc(var(--map-inset-bottom, 0px) + 2.4rem);
+    align-items: flex-end;
+    max-width: 17rem;
+  }
+}
+
+.map-key__toggle,
+.map-key__zoom,
+.map-key__panel {
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: var(--map-shadow);
+}
+
+.map-key__toggle,
+.map-key__zoom {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.75rem; /* 44px touch target */
+  max-width: 100%;
+  padding: 0 0.7rem;
+  font: inherit;
+  cursor: pointer;
+}
+
+.map-key__zoom {
+  font-weight: 600;
+  color: var(--link);
+}
+
+.map-key__zoom svg {
+  flex: 0 0 auto;
+}
+
+.map-key[data-forests="near"] .map-key__zoom {
+  display: none;
+}
+
+@media (min-width: 720px) {
+  .map-key__toggle,
+  .map-key__zoom {
+    min-height: 2.25rem;
+  }
+}
+
+.map-key__toggle:hover,
+.map-key__zoom:hover {
+  background: var(--bg);
+}
+
+.map-key__toggle:focus-visible,
+.map-key__zoom:focus-visible,
+.find-card__close:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Closed: the line is the key itself (marks, season, mini ramp). Open: it
+   is the header of the panel above it. */
+.map-key__summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2rem 0.35rem;
+  min-width: 0;
+  padding: 0.3rem 0;
+  white-space: nowrap;
+}
+
+/* The ramp chip with its words ("skovenes forhold"): kept together, on a
+   second line where the finds' marks fill the first. */
+.map-key__summary-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.map-key__summary .map-key__dot--ring {
+  margin-left: 0.3rem;
+}
+
+.map-key__name {
+  font-weight: 600;
+}
+
+.map-key[data-open="true"] .map-key__summary,
+.map-key[data-open="false"] .map-key__name {
+  display: none;
+}
+
+.map-key__chevron {
+  flex: 0 0 auto;
+  width: 0.45rem;
+  height: 0.45rem;
+  margin: 0.2rem 0.1rem 0 0.3rem;
+  border-left: 2px solid var(--muted);
+  border-top: 2px solid var(--muted);
+  transform: rotate(45deg);
+}
+
+.map-key[data-open="true"] .map-key__chevron {
+  margin-top: -0.2rem;
+  transform: rotate(-135deg);
+}
+
+.map-key__mini-ramp {
+  display: inline-grid;
+  grid-template-columns: repeat(4, 0.7rem);
+  height: 0.8rem;
+  border-radius: 2px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--ink) 30%, transparent);
+}
+
+.map-key__panel {
+  width: 15.5rem;
+  max-width: 100%;
+  /* never taller than the free map above the key's own line (phone: between
+     the search field and the sheet), so it scrolls instead of sliding under
+     the search field */
+  max-height: min(
+    50dvh,
+    24rem,
+    calc(
+      100dvh - var(--map-inset-top, 0px) - var(--map-inset-bottom, 0px) - var(--map-key-lift, 0px) -
+        4.4rem
+    )
+  );
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.map-key__section {
+  padding: 0.6rem 0.75rem 0.65rem;
+}
+
+.map-key__section + .map-key__section {
+  border-top: 1px solid var(--border);
+}
+
+.map-key__title {
+  margin: 0 0 0.4rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.map-key__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.map-key__list + .map-key__list {
+  margin-top: 0.4rem;
+  padding-top: 0.4rem;
+  border-top: 1px dashed var(--border);
+}
+
+/* The species rows are for the desktop card; on a phone the key stays short
+   and the sheet's own list names the species. */
+@media (max-width: 719.98px) {
+  .map-key__species {
+    display: none;
+  }
+
+  .map-key__species + .map-key__list {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: 0;
+  }
+}
+
+.map-key__row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.1rem 0;
+}
+
+/* The same two marks the circle layer draws: solid with a halo, or a ring. */
+.map-key__dot {
+  --c: var(--ink);
+  flex: 0 0 auto;
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 50%;
+  background: var(--c);
+  box-shadow:
+    0 0 0 1.5px var(--surface),
+    0 0 0 2.5px color-mix(in srgb, var(--ink) 18%, transparent);
+}
+
+.map-key__dot--ring {
+  background: color-mix(in srgb, var(--c) 20%, transparent);
+  border: 1.5px solid var(--c);
+  box-shadow: none;
+}
+
+.map-key__density {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-top: 0.5rem;
+  color: var(--muted);
+}
+
+.map-key__density-bar {
+  --c: var(--find);
+  flex: 1;
+  min-width: 4rem;
+  height: 0.6rem;
+  border-radius: 0.3rem;
+  background: linear-gradient(
+    to right,
+    color-mix(in srgb, var(--c) 8%, transparent),
+    color-mix(in srgb, var(--c) 45%, transparent) 55%,
+    color-mix(in srgb, var(--find-deep) 80%, transparent)
+  );
+  border: 1px solid var(--border);
+}
+
+.map-key__hint {
+  margin: 0.45rem 0 0;
+  color: var(--muted);
+}
+
+.map-key[data-finds="far"] .map-key__hint--near,
+.map-key[data-finds="near"] .map-key__hint--far,
+.map-key[data-finds="near"] .map-key__density {
+  display: none;
+}
+
+/* The four classes the forests are coloured by. Each swatch is painted by
+   maplegend.ts the way the map paints a forest: the class tint over the
+   basemap's forest colour, inside the class's edge (--edge). */
+.map-key__ramp {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2px;
+  height: 1.1rem;
+}
+
+.map-key__ramp span {
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 1.5px var(--edge, color-mix(in srgb, var(--ink) 22%, transparent));
+}
+
+.map-key__ramp-labels {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2px;
+  margin: 0.15rem 0 0.45rem;
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  color: var(--muted);
+}
+
+.map-key__ramp-direction {
+  display: flex;
+  justify-content: space-between;
+  margin: -0.3rem 0 0.45rem;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.map-key__ramp-direction span:first-child::before {
+  content: "← ";
+}
+
+.map-key__ramp-direction span:last-child::after {
+  content: " →";
+}
+
+/* In place of the classes on a day when no forest in reach is drawn. */
+.map-key__note {
+  margin: 0 0 0.45rem;
+}
+
+.map-key__ring {
+  flex: 0 0 auto;
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 50%;
+  border: 1.5px dotted var(--ink);
+}
+
+/* --- the find card (observations.ts): a MapLibre popup attached to the pin,
+   summarising the finds around the spot the pin was placed on --- */
+.find-card {
+  font: inherit;
+  z-index: 3; /* above the pin marker and the map key */
+}
+
+.find-card .maplibregl-popup-content {
+  padding: 0.65rem 0.75rem 0.7rem;
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--map-shadow);
+  font-size: 0.85rem;
+  line-height: 1.4;
+  min-width: 12.5rem;
+}
+
+.find-card.maplibregl-popup-anchor-bottom .maplibregl-popup-tip,
+.find-card.maplibregl-popup-anchor-bottom-left .maplibregl-popup-tip,
+.find-card.maplibregl-popup-anchor-bottom-right .maplibregl-popup-tip {
+  border-top-color: var(--surface);
+}
+
+.find-card.maplibregl-popup-anchor-top .maplibregl-popup-tip,
+.find-card.maplibregl-popup-anchor-top-left .maplibregl-popup-tip,
+.find-card.maplibregl-popup-anchor-top-right .maplibregl-popup-tip {
+  border-bottom-color: var(--surface);
+}
+
+.find-card__content {
+  --c: var(--find);
+}
+
+.find-card__head {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.find-card__title {
+  flex: 1;
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.find-card__close {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  margin: -0.25rem -0.3rem 0 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.find-card__close:hover {
+  background: var(--bg);
+  color: var(--ink);
+}
+
+.find-card__line {
+  margin: 0.15rem 0 0;
+}
+
+.find-card__line--muted {
+  margin-top: 0.35rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.find-card__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0.4rem 0 0;
+  padding: 0.15rem 0.55rem 0.15rem 0.45rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.find-card__badge::before {
+  content: "";
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  border: 1.5px solid var(--c);
+  background: color-mix(in srgb, var(--c) 20%, transparent);
+}
+
+.find-card__badge[data-now="true"] {
+  border-color: color-mix(in srgb, var(--c) 45%, var(--border));
+  background: color-mix(in srgb, var(--c) 9%, var(--surface));
+  color: var(--ink);
+}
+
+.find-card__badge[data-now="true"]::before {
+  background: var(--c);
+}
+
+.find-card__species {
+  list-style: none;
+  margin: 0.4rem 0 0;
+  padding: 0;
+}
+
+.find-card__species li {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.find-card__name {
+  flex: 1;
+}
+
+/* The forest card (forestscores.ts): the same card, for a tap inside a
+   forest coloured by its score. */
+.forest-card__score {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0.3rem 0 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.forest-card__score strong {
+  font-size: 1.05rem;
+}
+
+/* The forest's lines at the end of a find card (a tap that hit finds). */
+.forest-card--in-find {
+  margin-top: 0.55rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border);
+}
+
+.forest-card__name {
+  margin: 0;
+  font-weight: 700;
+}
+
+.forest-card--in-find .forest-card__score {
+  margin-top: 0.1rem;
+}
+
+.forest-card__swatch {
+  flex: 0 0 auto;
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 1.5px var(--edge, var(--muted));
+}
+
+.find-card__more {
+  color: var(--muted);
+}
+
+.find-card__swatch {
+  flex: 0 0 auto;
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 50%;
+  background: var(--c);
+}
+
+/* Twelve months, a bar for each month with finds at this spot, drawn like
+   the dots on the map: solid for the months around today, pale otherwise. */
+.find-card__months {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  margin: 0.55rem 0 0;
+}
+
+.find-card__month {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  height: 2.6rem;
+  padding: 0 1.5px;
+}
+
+.find-card__month[data-now="true"] {
+  background: color-mix(in srgb, var(--c) 10%, transparent);
+}
+
+.find-card__bar {
+  width: 100%;
+  height: calc(var(--h, 0%) * 0.62);
+  border-radius: 2px 2px 0 0;
+  background: color-mix(in srgb, var(--c) 30%, transparent);
+  box-shadow: inset 0 0 0 1px var(--c);
+}
+
+.find-card__month[data-now="true"] .find-card__bar {
+  background: var(--c);
+}
+
+.find-card__initial {
+  font-size: 0.62rem;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.find-card__month[data-found="true"] .find-card__initial {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+@media (pointer: coarse) {
+  .find-card__close {
+    width: 2.75rem;
+    height: 2.75rem;
+    margin: -0.6rem -0.7rem -0.5rem 0;
+  }
+}
+
+/* A short phone leaves the open key some 160px between the search field and
+   the sheet: drop the hints and tighten the sections so both fit with little
+   or no scrolling (the panel scrolls for the rest). */
+@media (max-width: 719.98px) and (max-height: 700px) {
+  .map-key__hint {
+    display: none;
+  }
+
+  .map-key__note {
+    margin-bottom: 0.3rem;
+  }
+
+  .map-key__section {
+    padding: 0.4rem 0.7rem 0.45rem;
+  }
+
+  .map-key__title {
+    margin-bottom: 0.25rem;
+  }
+
+  .map-key__ramp-labels {
+    margin-bottom: 0.35rem;
+  }
+}
+
+/* --- cards on a small map ---
+   A card is never taller than the free map less its pin (observations.ts sets
+   the height); what does not fit scrolls inside, under a heading and close
+   button that stay in place. */
+.find-card .maplibregl-popup-content {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.find-card__head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin: -0.65rem -0.75rem 0;
+  padding: 0.65rem 0.75rem 0;
+  background: var(--surface);
+}
+
+@media (max-width: 719.98px) {
+  /* The closed key steps aside while a card is open: on a phone at half
+     sheet the map is too low for both, and the card is the answer to the tap
+     just made. It is back when the card closes. */
+  .maplibregl-map:has(.find-card) .map-key[data-open="false"] {
+    visibility: hidden;
+  }
+
+  /* On a phone the forest comes first in a find card, right under the
+     heading: a low map shows only the top of a long card (the rest scrolls),
+     and this one line must not be the part that is out of sight. */
+  .find-card__content:has(.forest-card--in-find) {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .find-card__content:has(.forest-card--in-find) > * {
+    order: 2;
+  }
+
+  .find-card__content:has(.forest-card--in-find) > .find-card__head {
+    order: 0;
+  }
+
+  .find-card__content > .forest-card--in-find {
+    order: 1;
+    margin: 0.45rem 0 0.35rem;
+    padding: 0 0 0.4rem;
+    border-top: 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* The forest at the end of a find card, in one line:
+     "Kobskov · [] 46 · middel forhold". */
+  .forest-card--in-find {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 0.35rem;
+  }
+
+  .forest-card--in-find .forest-card__name::after {
+    content: " ·";
+    font-weight: 400;
+  }
+
+  .forest-card--in-find .forest-card__score {
+    margin: 0;
+    align-items: baseline;
+  }
+
+  .forest-card--in-find .forest-card__score strong {
+    font-size: inherit;
+  }
+
+  .forest-card--in-find .forest-card__swatch {
+    align-self: center;
+  }
+
+  .forest-card--in-find .find-card__line--muted {
+    display: none;
+  }
+}
+
+/* The closed key on a day with nothing to colour: the words may wrap. */
+.map-key__summary-note {
+  white-space: normal;
+  color: var(--muted);
+}

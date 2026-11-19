@@ -1,0 +1,29 @@
+[
+  {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/26237290/large.jpeg",
+    "credit": "Matthew Blissett",
+    "license": "CC BY 4.0",
+    "photo_url": "https://www.inaturalist.org/photos/26237290",
+    "observation_url": "https://www.inaturalist.org/observations/17292844",
+    "source": "iNaturalist (Research Grade)",
+    "reviewed": true
+  },
+  {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/27666043/large.jpg",
+    "credit": "Kyle Copas",
+    "license": "CC BY 4.0",
+    "photo_url": "https://www.inaturalist.org/photos/27666043",
+    "observation_url": "https://www.inaturalist.org/observations/18095425",
+    "source": "iNaturalist (Research Grade)",
+    "reviewed": true
+  },
+  {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/53963041/large.jpg",
+    "credit": "dschigel",
+    "license": "CC BY 4.0",
+    "photo_url": "https://www.inaturalist.org/photos/53963041",
+    "observation_url": "https://www.inaturalist.org/observations/34299608",
+    "source": "iNaturalist (Research Grade)",
+    "reviewed": true
+  }
+]

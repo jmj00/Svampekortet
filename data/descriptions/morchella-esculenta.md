@@ -1,0 +1,3 @@
+Spiselig Morkel har et blegt gulbrunt til okker hoved med et uregelmæssigt bikagemønster af furer og æser, og hovedet er vokset helt sammen med den hvide, hule stok. Skærer man svampen på langs, er den fuldstændig hul fra top til bund. Den kommer om foråret, april-maj, på kalkrig eller forstyrret jord, i haver, under ask og på gammelt brændt areal.
+
+En eftertragtet spisesvamp, men den må aldrig spises rå eller let tilberedt – den skal koges eller steges grundigt i mindst 10-15 minutter. Ægte Stenmorkel (*Gyromitra esculenta*) er giftig og har et hjerneagtigt, ikke bikageformet hoved og et fyldt, kammeret indre; er hovedet ikke helt hult med bikagemønster, så lad svampen stå.

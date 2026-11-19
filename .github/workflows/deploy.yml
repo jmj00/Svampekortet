@@ -1,0 +1,192 @@
+name: deploy
+
+# Rebuilds the database + payload from the live sources and deploys the web app to
+# Cloudflare Pages. Weekly (unattended), plus on demand. Needs three repo secrets
+# — see docs/deploy.md.
+#
+# The DuckDB is cached between runs. Weather-refresh scope, from cheapest:
+#   skip         --skip-dmi: reuse the cached weather untouched (~12 min total).
+#                Use for frontend / model-code deploys that don't touch data.
+#   incremental  re-pull the last two years (~5 min of weather).
+#   full         re-pull 2011-present (~55 min of weather). Forced when the cache
+#                is cold, or on the scheduled run roughly monthly (ISO week % 4)
+#                for hygiene.
+#   auto         (default) incremental, unless cold cache or the monthly hygiene
+#                window on a scheduled run -> full.
+# A manual run defaults to `auto` and never triggers the monthly full rebuild.
+#
+# Named forest points (Danske Stednavne, docs/adr/0014) refresh only on request
+# -- the register changes on a ~yearly cadence, not weekly. `forests: refresh`
+# re-fetches it into the same cached DuckDB (a couple of minutes); `skip`
+# (default, including every scheduled run) reuses whatever is already cached,
+# and a deploy still ships fine with none.
+#
+# The advisory biotope grid (forest/soil type, docs/adr/0016) refreshes only on
+# request too -- land cover and surface geology change on a geological
+# timescale, not weekly. `biotope: refresh` re-fetches CORINE + GEUS into the
+# same cached DuckDB (a few minutes, no credentials needed -- both are public,
+# no-auth services); `skip` (default) reuses whatever is already cached, and a
+# deploy still ships fine with none (the advisory site card just doesn't show).
+#
+# The host-tree grid (real per-species tree probability, docs/adr/0019) is the
+# same shape as biotope but scored, not advisory, for one core species
+# (craterellus-tubaeformis) -- also refreshes only on request: tree
+# distribution changes on a similar geological timescale. `host_tree: refresh`
+# windowed-reads the Denmark bbox from each species' remote Cloud-Optimized
+# GeoTIFF on Zenodo (several minutes, no credentials needed, but a real
+# network-heavy fetch, unlike biotope's CORINE/GEUS calls); `skip` (default)
+# reuses whatever is already cached, and a deploy still ships fine with none
+# (that species' score just falls back to habitat/seasonality/weather alone).
+
+on:
+  workflow_dispatch:
+    inputs:
+      weather:
+        description: "Weather refresh scope"
+        type: choice
+        default: auto
+        options: [auto, incremental, full, skip]
+      forests:
+        description: "Named-forest refresh (Danske Stednavne; a couple of minutes, leave as skip on routine deploys)"
+        type: choice
+        default: skip
+        options: [skip, refresh]
+      biotope:
+        description: "Biotope grid refresh (CORINE + GEUS, advisory only; a few minutes, leave as skip on routine deploys)"
+        type: choice
+        default: skip
+        options: [skip, refresh]
+      host_tree:
+        description: "Host-tree grid refresh (Zenodo COGs, scored for craterellus-tubaeformis; several minutes, leave as skip on routine deploys)"
+        type: choice
+        default: skip
+        options: [skip, refresh]
+  schedule:
+    - cron: "0 5 * * 1" # Mondays 05:00 UTC
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e .
+
+      - name: Restore the weather database
+        uses: actions/cache/restore@v4
+        with:
+          path: build/svampekortet.duckdb
+          key: duckdb-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: duckdb-
+
+      - name: Plan the weather refresh
+        id: plan
+        env:
+          MODE: ${{ inputs.weather || 'auto' }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          week=$(date -u +%V)
+          year=$(date -u +%Y)
+          cold=false
+          python -c "import duckdb,sys; c=duckdb.connect('build/svampekortet.duckdb', read_only=True); sys.exit(0 if c.execute('SELECT count(*) FROM weather_daily').fetchone()[0] > 3000000 else 1)" 2>/dev/null || cold=true
+
+          case "$MODE" in
+            skip)
+              args="--skip-dmi"; echo "weather: reuse the cached data untouched" ;;
+            full)
+              args="--dmi-from-year 2011"; echo "weather: full rebuild (forced)" ;;
+            incremental)
+              args="--dmi-from-year $(( year - 1 ))"; echo "weather: incremental (forced)" ;;
+            *)
+              if [ "$cold" = true ]; then
+                args="--dmi-from-year 2011"; echo "weather: full rebuild (cold cache)"
+              elif [ "$EVENT" = "schedule" ] && [ $(( 10#$week % 4 )) -eq 0 ]; then
+                args="--dmi-from-year 2011"; echo "weather: full rebuild (monthly hygiene)"
+              else
+                args="--dmi-from-year $(( year - 1 ))"; echo "weather: incremental (recent years only)"
+              fi ;;
+          esac
+          echo "args=$args" >> "$GITHUB_OUTPUT"
+
+      - name: Refresh named forests (Danske Stednavne)
+        if: ${{ inputs.forests == 'refresh' }}
+        env:
+          DATAFORDELER_CLIENT_ID: ${{ secrets.DATAFORDELER_CLIENT_ID }}
+          DATAFORDELER_CLIENT_SECRET: ${{ secrets.DATAFORDELER_CLIENT_SECRET }}
+        run: python -m pipeline.ingest.stednavne --db build/svampekortet.duckdb
+
+      - name: Refresh biotope grid (CORINE + GEUS)
+        if: ${{ inputs.biotope == 'refresh' }}
+        run: python -m pipeline.ingest.biotope --db build/svampekortet.duckdb
+
+      - name: Refresh host-tree grid (Zenodo COGs)
+        if: ${{ inputs.host_tree == 'refresh' }}
+        run: python -m pipeline.ingest.host_tree --db build/svampekortet.duckdb
+
+      - name: Download the Svampeatlas Darwin Core archive
+        run: curl -sSL --retry 3 --fail -o dwca.zip https://svampe.databasen.org/dwc/dwcarchive.zip
+
+      - name: Build the database and payload
+        run: |
+          python -m pipeline.build --archive dwca.zip ${{ steps.plan.outputs.args }} \
+            --report build/build_report.json
+
+      - name: Save the weather database
+        if: always() && hashFiles('build/svampekortet.duckdb') != ''
+        uses: actions/cache/save@v4
+        with:
+          path: build/svampekortet.duckdb
+          key: duckdb-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Stage the payload for the web build
+        run: |
+          rm -rf web/public/data
+          cp -r build/publish web/public/data
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+        working-directory: web
+      - run: npm run build
+        working-directory: web
+        env:
+          VITE_DATAFORDELER_API_KEY: ${{ secrets.VITE_DATAFORDELER_API_KEY }}
+          VITE_SENTRY_DSN: ${{ vars.VITE_SENTRY_DSN }}
+          VITE_RELEASE: ${{ github.sha }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
+
+      - name: Deploy to Cloudflare Pages
+        # Direct wrangler call (not cloudflare/wrangler-action) with its own
+        # retry loop: a deploy can fail with "Failed to publish your
+        # Function ... Unknown internal error occurred" -- a known,
+        # transient Cloudflare-side flake on the Functions-publish step that
+        # this project doesn't even use, seen once in five weekly runs, with
+        # the static content going live anyway despite the reported
+        # failure. wrangler reads CLOUDFLARE_API_TOKEN/ACCOUNT_ID natively,
+        # no wrapper action needed.
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          for attempt in 1 2 3; do
+            if npx wrangler@3 pages deploy web/dist --project-name=svampekortet --branch=main; then
+              exit 0
+            fi
+            echo "deploy attempt $attempt failed"
+            [ "$attempt" -lt 3 ] && sleep $((attempt * 15))
+          done
+          echo "deploy failed after 3 attempts"
+          exit 1

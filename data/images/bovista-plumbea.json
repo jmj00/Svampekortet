@@ -1,0 +1,29 @@
+[
+  {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/259896619/large.jpeg",
+    "credit": "Lightning Star Sky / Skyler Noah Wall",
+    "license": "CC BY 4.0",
+    "photo_url": "https://www.inaturalist.org/photos/259896619",
+    "observation_url": "https://www.inaturalist.org/observations/150695059",
+    "source": "iNaturalist (Research Grade)",
+    "reviewed": false
+  },
+  {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/277199416/large.jpeg",
+    "credit": "Carminda Santos",
+    "license": "CC BY 4.0",
+    "photo_url": "https://www.inaturalist.org/photos/277199416",
+    "observation_url": "https://www.inaturalist.org/observations/160417510",
+    "source": "iNaturalist (Research Grade)",
+    "reviewed": false
+  },
+  {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/339252757/large.jpg",
+    "credit": "Heinähukka",
+    "license": "CC BY 4.0",
+    "photo_url": "https://www.inaturalist.org/photos/339252757",
+    "observation_url": "https://www.inaturalist.org/observations/193150009",
+    "source": "iNaturalist (Research Grade)",
+    "reviewed": false
+  }
+]

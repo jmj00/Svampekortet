@@ -1,0 +1,3 @@
+Skær altid støvbolden helt igennem, før du bruger den. Kødet skal være ensartet hvidt og fast hele vejen. Ser du omridset af en hat med lameller, er det en ung fluesvamp (*Amanita*) – kassér den. Er kødet hårdt og marmoreret mørkt, er det en bruskbold (*Scleroderma*), som giver maveonde. Bliver kødet gult eller brunt, er svampen for gammel.
+
+Krystal-Støvbold er pæreformet, hvid til cremefarvet og dækket af små kegleformede pigge, der falder af og efterlader et fint netmønster. Den står i løv og nåleskove ofte i klynger og på stier fra sensommer til efterår. Kun helt unge svampe med kridhvidt kød bruges – de smager mildt og svampeagtigt.

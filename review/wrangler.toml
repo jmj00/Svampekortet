@@ -1,0 +1,11 @@
+name = "svampekortet-review"
+pages_build_output_dir = "public"
+compatibility_date = "2026-09-01"
+
+# Backs review/functions/api/review-state.js. The namespace itself was
+# created once, by hand, in the Cloudflare dashboard (Storage & Databases ->
+# KV) -- there is no API-token-free way to create a KV namespace, so this
+# can't be automated the way the rest of the deploy is.
+[[kv_namespaces]]
+binding = "REVIEW_STATE"
+id = "fbe083739ae6439282661ccb2ab4f5f6"

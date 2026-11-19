@@ -1,0 +1,22 @@
+{
+  "_comment": "Seed for the curated guided-search. Danish free-text / chips map to a filter over pipeline/species.py. Expanded in P1; no LLM in the MVP.",
+  "chips": ["spiselige svampe", "kantareller", "rorhatte", "Karl Johan"],
+  "keywords": {
+    "kantarel": { "group": "kantarel" },
+    "kantareller": { "group": "kantarel" },
+    "chanterelle": { "group": "kantarel" },
+    "tragtkantarel": { "scientific_name": "Craterellus tubaeformis" },
+    "trompetsvamp": { "scientific_name": "Craterellus tubaeformis" },
+    "rorhat": { "group": "rorhat" },
+    "rorhatte": { "group": "rorhat" },
+    "bolete": { "group": "rorhat" },
+    "karl johan": { "scientific_name": "Boletus edulis" },
+    "spiselig rorhat": { "scientific_name": "Boletus edulis" },
+    "brunstokket": { "scientific_name": "Imleria badia" },
+    "slimrorhat": { "group": "rorhat" },
+    "brungul slimrorhat": { "scientific_name": "Suillus luteus" },
+    "broget slimrorhat": { "scientific_name": "Suillus variegatus" },
+    "smorrorhat": { "scientific_name": "Suillus luteus" },
+    "spiselige svampe": { "filter": "edible" }
+  }
+}

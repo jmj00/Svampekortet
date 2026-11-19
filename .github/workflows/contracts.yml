@@ -1,0 +1,26 @@
+name: contract drift
+
+# Hits the real external APIs and fails if a response no longer matches the shape
+# the pipeline reads. A failed run shows up in the Actions tab and emails the
+# repo owner. Refresh the fixture + assertion in pipeline/contracts.py when it fires.
+
+on:
+  schedule:
+    - cron: "17 6 * * 1" # Mondays 06:17 UTC
+  workflow_dispatch:
+
+jobs:
+  contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[dev]"
+      - run: python -m pipeline.contracts
+        env:
+          # Adressevælgeren (ADR-0015) needs an API-Key on every request,
+          # unlike DAWA which it replaced -- reuses the same key the web app
+          # ships client-side, since it's already a public credential.
+          DATAFORDELER_API_KEY: ${{ secrets.VITE_DATAFORDELER_API_KEY }}

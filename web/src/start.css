@@ -1,0 +1,1913 @@
+/* =====================================================================
+   START SCREEN (start.ts, markup in index.html) and the "home" buttons
+   that lead back to it. A layer of the same page: on phones a sheet over
+   the map with a band of map left showing above it, from 720px the
+   sidebar's content with the map alongside. Built on the shell's tokens.
+
+   Sizes: the base rules are the compact ones, made to show all four ways
+   in, the way to the map and the safety strip without scrolling on a
+   phone in a browser (390x664, 360x640) and a low laptop window
+   (1366x650). Taller screens get more air further down.
+   ===================================================================== */
+
+:root {
+  /* how much map stays visible above the start sheet on a phone */
+  --start-band: clamp(5.25rem, 15dvh, 9.5rem);
+  /* the primary card and button: moss green in both themes */
+  --start-hero-bg: #2f4a36;
+  --start-hero-ink: #fffdf8;
+  --start-hero-sub: rgb(255 253 248 / 0.84);
+  --start-hero-line: rgb(255 253 248 / 0.24);
+  --start-pin: #e9a54c;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --start-hero-bg: #2c4434;
+    --start-hero-ink: #f3f0e3;
+    --start-hero-sub: rgb(243 240 227 / 0.82);
+    --start-hero-line: rgb(243 240 227 / 0.2);
+  }
+}
+
+@media (min-height: 780px) {
+  :root {
+    --start-band: clamp(5.25rem, 20dvh, 11rem);
+  }
+}
+
+/* --- the layer ----------------------------------------------------------- */
+/* (data-start-leaving: it is still on screen for its way out, see "motion") */
+#app:not([data-start]):not([data-start-leaving]) #start {
+  display: none;
+}
+
+#start {
+  position: absolute;
+  inset: 0;
+  z-index: 6; /* over the sheet (3) and the address search (5) */
+  pointer-events: none; /* only the sheet itself takes input; the band is map */
+}
+
+/* The sheet does not scroll itself: the views scroll inside it, and the
+   safety strip stays put underneath them. */
+.start__sheet {
+  position: absolute;
+  top: var(--start-band);
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  box-shadow: var(--elev-sheet);
+  pointer-events: auto;
+}
+
+.start__scroll {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 max(var(--gutter), env(safe-area-inset-right)) 0.25rem
+    max(var(--gutter), env(safe-area-inset-left));
+}
+
+.start__view {
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
+}
+
+.start__view[hidden] {
+  display: none;
+}
+
+/* What the start screen replaces is hidden as well as inert. */
+#app[data-start] #search {
+  visibility: hidden;
+}
+
+/* --- wordmark ------------------------------------------------------------ */
+/* Phone: a pill over the band of map, in the place the address search has in
+   the main interface. Sidebar layout: the sidebar's top row (further down). */
+.start__brand {
+  position: absolute;
+  top: var(--shell-top);
+  left: max(0.75rem, env(safe-area-inset-left));
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 2.75rem;
+  padding: 0 1.1rem 0 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  box-shadow: var(--elev-2);
+}
+
+.start__mark {
+  flex: none;
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.start__wordmark {
+  color: var(--brand);
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1;
+}
+
+.start__tag {
+  display: none;
+  min-width: 0;
+  margin-left: auto;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: var(--text-xs);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* --- home view: headline -------------------------------------------------- */
+.start__head {
+  margin-top: 0.85rem;
+}
+
+.start__eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 1rem; /* holds its line before the manifest has filled it */
+  margin: 0 0 0.2rem;
+  color: var(--muted);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  line-height: 1.3;
+  text-transform: uppercase;
+}
+
+.start__eyebrow::before {
+  content: "";
+  flex: none;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--score-good);
+}
+
+.start__eyebrow:empty::before {
+  display: none; /* no dot in front of nothing */
+}
+
+.start__title {
+  margin: 0;
+  font-size: 1.625rem;
+  line-height: 1.15;
+  text-wrap: balance;
+}
+
+.start__title:focus {
+  outline: none; /* programmatic focus target only (tabindex -1) */
+}
+
+/* --- home view: the four ways in ----------------------------------------- */
+.start__flows {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0.6rem;
+  margin: 0.7rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.start__flow {
+  position: relative; /* for "Skift sted" */
+}
+
+.start__flow--wide {
+  grid-column: 1 / -1;
+}
+
+.flow {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  height: 100%;
+  padding: 0.7rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-l);
+  background: var(--surface);
+  box-shadow: var(--elev-1);
+  color: var(--ink);
+  font-size: var(--text-base);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    transform 0.16s var(--ease-out),
+    box-shadow 0.16s var(--ease-out),
+    border-color 0.16s var(--ease-out);
+}
+
+.flow__text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.flow__title {
+  text-wrap: balance;
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+.flow__sub {
+  /* never more than two lines, whatever the manifest puts in it */
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: var(--text-sm);
+  line-height: 1.4;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+@media (hover: hover) {
+  .flow:hover {
+    border-color: var(--border-strong);
+    box-shadow: var(--elev-2);
+    transform: translateY(-1px);
+  }
+
+  .flow--hero:hover {
+    border-color: transparent;
+  }
+}
+
+.flow:active {
+  transform: scale(0.985);
+}
+
+/* 1: the primary way in */
+.flow--hero {
+  min-height: 6.5rem;
+  padding: 0.8rem 0.5rem 0.8rem 1rem;
+  overflow: hidden;
+  border-color: transparent;
+  background: var(--start-hero-bg);
+  color: var(--start-hero-ink);
+}
+
+.flow--hero .flow__title {
+  font-size: 1.3125rem;
+  line-height: 1.15;
+}
+
+.flow--hero .flow__sub {
+  color: var(--start-hero-sub);
+  /* its own fixed sentence is never cut: on a narrow screen or at a large text
+     size it takes the lines it needs */
+  display: block;
+  -webkit-line-clamp: none;
+  line-clamp: none;
+}
+
+.flow--hero:focus-visible {
+  outline-offset: 3px;
+}
+
+/* a pin with the rings the map draws round it */
+.flow__art {
+  flex: none;
+  align-self: flex-end;
+  width: 5.5rem;
+  height: 5.5rem;
+  margin: -0.5rem 0 -1.4rem;
+}
+
+.flow__ring {
+  fill: none;
+  stroke: var(--start-hero-line);
+  stroke-width: 1.2;
+}
+
+.flow__ring--inner {
+  fill: rgb(255 253 248 / 0.08);
+}
+
+.flow__pin {
+  fill: var(--start-pin);
+}
+
+.flow__pin-eye {
+  fill: var(--start-hero-bg);
+}
+
+/* 2: with the species' own photos. At a large text size the photos drop
+   below the words instead of squeezing them. */
+.flow--species {
+  flex-wrap: wrap;
+  row-gap: 0.5rem;
+}
+
+.flow--species .flow__text {
+  flex: 1 1 9rem;
+}
+
+.flow__thumbs {
+  flex: none;
+  display: flex;
+  padding-left: 0.75rem;
+}
+
+.flow__thumb {
+  position: relative;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  margin-left: -0.75rem;
+  overflow: hidden;
+  border: 2px solid var(--surface);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--border) 60%, var(--surface));
+  color: var(--border-strong);
+}
+
+.flow__thumb svg {
+  width: 55%;
+  height: 55%;
+}
+
+.flow__thumb img,
+.tile__photo img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.flow__thumb img.is-loaded,
+.tile__photo img.is-loaded {
+  opacity: 1;
+}
+
+.flow__thumb--more {
+  background: color-mix(in srgb, var(--accent) 16%, var(--surface));
+  color: var(--link);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 3 and 4: side by side; the icon beside the title, the line underneath */
+.flow--tile {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 0.3rem;
+  padding: 0.65rem 0.75rem;
+}
+
+.flow__head {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 2.25rem;
+}
+
+.flow--tile .flow__title {
+  font-size: 1.0625rem;
+  line-height: 1.15;
+}
+
+.flow__icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--brand) 13%, var(--surface));
+  color: var(--brand);
+}
+
+.flow__icon svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.flow__icon--photos {
+  display: flex;
+  width: auto;
+  padding-left: 0.75rem;
+  border-radius: 0;
+  background: none;
+}
+
+.flow__icon--photos .flow__thumb {
+  width: 2.25rem;
+  height: 2.25rem;
+}
+
+.flow__icon--photos .flow__thumb svg {
+  fill: currentColor;
+  stroke: none;
+}
+
+/* With a pin set: the card names it on one line and goes straight in; "Skift
+   sted" is a button of its own, laid over the card's lower edge. */
+.start__flow.has-pin > .flow {
+  padding-bottom: 2.3rem;
+}
+
+.start__flow.has-pin .flow__sub {
+  display: block;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* the hero has the width to give a long pin name a second line */
+.start__flow.has-pin .flow--hero .flow__sub {
+  display: -webkit-box;
+  white-space: normal;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+.flow__change {
+  position: absolute;
+  z-index: 1;
+  bottom: 0.4rem;
+  left: 0.75rem;
+  height: 1.75rem;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-s);
+  background: none;
+  color: var(--link);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.flow__change[hidden] {
+  display: none;
+}
+
+/* 44px touch target around the line of text */
+.flow__change::after {
+  content: "";
+  position: absolute;
+  inset: -0.5rem -0.75rem;
+}
+
+.flow--hero + .flow__change {
+  left: 1rem;
+  color: var(--start-hero-ink);
+}
+
+/* Sidebar layout only: the map beside the start screen takes a pin directly. */
+.start__maphint {
+  display: none;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.6rem 0 0;
+  color: var(--muted);
+  font-size: var(--text-sm);
+  line-height: 1.4;
+}
+
+.start__maphint svg {
+  flex: none;
+  width: 1.15rem;
+  height: 1.15rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* --- home view: the way to the map, and the safety strip -------------------- */
+.start__skip {
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.75rem;
+  margin-top: auto; /* the bottom of the view when there is room to spare */
+  padding: 0 1rem;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: none;
+  color: var(--link);
+  font-size: var(--text-base);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.start__skip svg {
+  width: 1.1rem;
+  height: 1.1rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 0.16s var(--ease-out);
+}
+
+@media (hover: hover) {
+  .start__skip:hover span {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .start__skip:hover svg {
+    transform: translateX(3px);
+  }
+}
+
+/* Pinned under the home view: it never scrolls out of sight. */
+.start__safety {
+  flex: none;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0 0.55rem;
+  padding: 0.5rem max(var(--gutter), env(safe-area-inset-right)) env(safe-area-inset-bottom)
+    max(var(--gutter), env(safe-area-inset-left));
+  border-top: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface) 55%, var(--bg));
+  color: var(--muted);
+  font-size: var(--text-xs);
+  line-height: 1.4;
+}
+
+#start[data-view="place"] .start__safety,
+#start[data-view="species"] .start__safety {
+  display: none;
+}
+
+.start__safety-icon {
+  width: 1.15rem;
+  height: 1.15rem;
+  fill: none;
+  stroke: var(--link);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.start__safety-icon circle {
+  fill: var(--link);
+}
+
+.start__safety p {
+  margin: 0;
+}
+
+.start__safety strong {
+  color: var(--ink);
+}
+
+.start__call {
+  grid-column: 2;
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0 0.3em;
+  min-height: 2.75rem;
+  margin-top: -0.3rem; /* the 44px target reaches up; the text sits close */
+  color: var(--link);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.start__call strong {
+  color: inherit;
+  white-space: nowrap;
+}
+
+/* --- the two steps: shared frame ------------------------------------------ */
+.start__bar {
+  display: flex;
+  align-items: center;
+  min-height: 2.75rem;
+  margin-left: -0.5rem;
+}
+
+.start__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.1rem;
+  min-height: 2.75rem;
+  padding: 0 0.85rem 0 0.35rem;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: none;
+  color: var(--link);
+  font-size: var(--text-base);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .start__back:hover {
+    background: color-mix(in srgb, var(--accent) 10%, transparent);
+  }
+}
+
+.start__back-icon {
+  display: grid;
+}
+
+.start__back-icon svg {
+  width: 1.35rem;
+  height: 1.35rem;
+}
+
+.start__title--step {
+  margin-top: 0.15rem;
+  font-size: var(--text-xl);
+}
+
+.start__lead {
+  margin: 0.35rem 0 0;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.start-field {
+  position: relative;
+}
+
+.start-field__icon {
+  position: absolute;
+  top: 0.8rem;
+  left: 0.85rem;
+  display: grid;
+  color: var(--muted);
+  pointer-events: none;
+}
+
+.start-field__icon svg {
+  width: 1.4rem;
+  height: 1.4rem;
+}
+
+.start-field input {
+  width: 100%;
+  height: 3rem;
+  padding: 0 0.9rem 0 2.8rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-l);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 1rem; /* 16px: below this iOS zooms the page on focus */
+}
+
+.start-field input::placeholder {
+  color: var(--muted);
+  opacity: 1;
+}
+
+.start-field input:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+
+/* --- place step ------------------------------------------------------------ */
+.place {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+
+.place__option {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  min-height: 3.25rem;
+  padding: 0.55rem 1rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-l);
+  background: var(--surface);
+  box-shadow: var(--elev-1);
+  color: var(--ink);
+  font-size: var(--text-md);
+  font-weight: 600;
+  line-height: 1.25;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.16s var(--ease-out);
+}
+
+.place__option:active {
+  transform: scale(0.985);
+}
+
+.place__option--primary {
+  border-color: transparent;
+  background: var(--start-hero-bg);
+  color: var(--start-hero-ink);
+}
+
+.place__option--primary:focus-visible {
+  outline-offset: 3px;
+}
+
+.place__option .sk-icon {
+  width: 1.4rem;
+  height: 1.4rem;
+}
+
+.place__option-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.place__option-sub {
+  overflow: hidden;
+  font-size: var(--text-sm);
+  font-weight: 400;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  opacity: 0.86;
+}
+
+.place__option[data-state="busy"] {
+  cursor: progress;
+}
+
+.place__spinner {
+  flex: none;
+  width: 1.15rem;
+  height: 1.15rem;
+  margin-left: auto;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  opacity: 0;
+}
+
+.place__option[data-state="busy"] .place__spinner {
+  opacity: 0.9;
+  animation: start-spin 0.8s linear infinite;
+}
+
+@keyframes start-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.place__message,
+.picker__status {
+  margin: 0;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--border));
+  border-radius: var(--radius-m);
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  color: var(--ink);
+  font-size: var(--text-sm);
+  line-height: 1.45;
+}
+
+.place__message[hidden],
+.picker__status[hidden] {
+  display: none;
+}
+
+.place__or {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.1rem 0;
+  color: var(--muted);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.place__or::before,
+.place__or::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.start-field.is-suggested input {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.place__results {
+  list-style: none;
+  margin: 0.4rem 0 0;
+  padding: 0.3rem;
+  max-height: min(42dvh, 18rem);
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-l);
+  background: var(--surface);
+  box-shadow: var(--elev-1);
+}
+
+.place__results:empty {
+  display: none;
+}
+
+.place__results li {
+  display: flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0.4rem 0.75rem;
+  border-radius: var(--radius-m);
+  line-height: 1.3;
+  cursor: pointer;
+}
+
+.place__results li:hover,
+.place__results li.is-active {
+  background: var(--bg);
+}
+
+.place__hint {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.1rem 0 0;
+  color: var(--muted);
+  font-size: var(--text-sm);
+  line-height: 1.4;
+}
+
+.place__hint .sk-icon {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+/* --- species step ---------------------------------------------------------- */
+.picker__field {
+  margin-top: 1rem;
+}
+
+.picker__status {
+  margin-top: 0.75rem;
+}
+
+.picker {
+  display: flex;
+  flex-direction: column;
+  gap: 1.35rem;
+  margin-top: 1.1rem;
+  padding-bottom: 0.5rem;
+}
+
+.picker__heading {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0 0 0.6rem;
+  color: var(--muted);
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  line-height: 1.3;
+  text-transform: uppercase;
+}
+
+.picker__count {
+  padding: 0.05rem 0.4rem;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--border) 70%, var(--bg));
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+}
+
+.picker__grid,
+.picker__featured {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.picker__grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.9rem 0.65rem;
+}
+
+.picker__featured {
+  gap: 0.6rem;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  width: 100%;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-m);
+  background: none;
+  color: var(--ink);
+  font-size: var(--text-sm);
+  text-align: left;
+  cursor: pointer;
+}
+
+.tile:focus-visible {
+  outline-offset: 3px;
+}
+
+.tile__photo {
+  position: relative;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: var(--radius-m);
+  background: color-mix(in srgb, var(--border) 55%, var(--surface));
+  color: var(--border-strong);
+  transition: box-shadow 0.16s var(--ease-out);
+}
+
+.tile__photo svg {
+  width: 42%;
+  height: 42%;
+}
+
+/* a hairline so pale photos keep their edge on the paper background */
+.tile__photo::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.08);
+  pointer-events: none;
+}
+
+@media (hover: hover) {
+  .tile:hover .tile__photo {
+    box-shadow: 0 0 0 2px var(--accent);
+  }
+}
+
+.tile:active .tile__photo {
+  transform: scale(0.97);
+}
+
+.tile__text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.tile__name {
+  font-weight: 600;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.tile__sci {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.tile__meta {
+  color: var(--muted);
+  font-size: var(--text-xs);
+  line-height: 1.3;
+}
+
+.tile__meta[data-season="in"],
+.tile__meta[data-season="peak"] {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.tile__meta[data-season="in"]::before,
+.tile__meta[data-season="peak"]::before {
+  content: "";
+  flex: none;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--score-good);
+}
+
+/* waiting for the species' page: a ring over its photo */
+.tile[data-state="loading"] .tile__photo::after {
+  content: "";
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  left: 50%;
+  width: 1.75rem;
+  height: 1.75rem;
+  margin: -0.875rem 0 0 -0.875rem;
+  border: 3px solid #fff;
+  border-top-color: transparent;
+  border-radius: 50%;
+  filter: drop-shadow(0 0 2px rgb(0 0 0 / 0.6));
+  animation: start-spin 0.8s linear infinite;
+}
+
+.tile[data-state="loading"] .tile__photo img {
+  filter: brightness(0.7);
+}
+
+/* one or two species in season: a card each instead of a lonely tile */
+.tile--featured {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-l);
+  background: var(--surface);
+  box-shadow: var(--elev-1);
+  font-size: var(--text-sm);
+}
+
+.tile--featured .tile__photo {
+  width: 5.5rem;
+}
+
+.tile--featured .tile__text {
+  gap: 0.15rem;
+}
+
+.tile--featured .tile__name {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  line-height: 1.2;
+}
+
+.tile--featured .tile__meta {
+  margin-top: 0.2rem;
+  font-size: var(--text-sm);
+}
+
+.tile--skeleton {
+  cursor: default;
+}
+
+.tile--skeleton .tile__name {
+  width: 70%;
+  height: 0.8rem;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--border) 55%, var(--surface));
+}
+
+.picker__more {
+  min-height: 3rem;
+  padding: 0 1rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-l);
+  background: var(--surface);
+  color: var(--link);
+  font-size: var(--text-base);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.picker__empty {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 2rem 1rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+.picker__empty strong {
+  color: var(--ink);
+}
+
+/* The step's "Forside" button follows the heading in the document, so focus
+   (which lands on the heading) reaches it with one Tab; it is shown first. */
+.start__bar {
+  order: -1;
+}
+
+/* The position could not be had: the button steps back for the search field. */
+.place__option[data-state="failed"] {
+  border-color: var(--border-strong);
+  background: var(--surface);
+  box-shadow: none;
+  color: var(--muted);
+}
+
+.place__or[hidden] {
+  display: none;
+}
+
+/* --- the place search (placesearch.ts), in the place step and in the main
+   interface's own field ---------------------------------------------------- */
+/* a named forest among the suggestions */
+.place__results li[data-kind="local"],
+#results li[data-kind="local"] {
+  gap: 0.55rem;
+  font-weight: 600;
+}
+
+.place-icon {
+  flex: none;
+  width: 1.25rem;
+  height: 1.25rem;
+  color: var(--brand);
+}
+
+/* what became of a search with little or nothing to list */
+.search-status {
+  margin: 0.4rem 0 0;
+  padding: 0.55rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-m);
+  background: color-mix(in srgb, var(--border) 30%, var(--surface));
+  color: var(--ink);
+  font-size: var(--text-sm);
+  line-height: 1.45;
+}
+
+.search-status[hidden] {
+  display: none;
+}
+
+.search-status[data-state="failed"] {
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+}
+
+/* Over the map on a phone it is a floating card like the field itself; in the
+   sidebar it sits in room made for it (--search-status-h, style.css). */
+#search-status {
+  margin-top: 0.375rem;
+  background: var(--surface);
+  box-shadow: var(--elev-2);
+}
+
+#search-status[data-state="failed"] {
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+}
+
+@media (min-width: 720px), (min-width: 560px) and (max-height: 520px) {
+  #search-status {
+    box-shadow: none;
+  }
+}
+
+/* the species could not be fetched at all */
+.picker__failed {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 1.5rem 1rem;
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--border));
+  border-radius: var(--radius-l);
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  color: var(--muted);
+  text-align: center;
+}
+
+.picker__failed strong {
+  color: var(--ink);
+  font-size: var(--text-md);
+}
+
+.picker__failed .picker__more {
+  align-self: center;
+  min-width: 9rem;
+  margin-top: 0.75rem;
+}
+
+/* --- phone: a sheet over the map ------------------------------------------ */
+@media (max-width: 559.98px), (max-width: 719.98px) and (min-height: 520.02px) {
+  /* The main interface's own sheet steps aside for the layer. */
+  #app[data-start] #sheet {
+    visibility: hidden;
+  }
+
+  /* Map controls keep clear of the layer: the attribution sits in the band
+     above the start sheet; in the place step the map below the card has the
+     whole screen under it. */
+  #app[data-start="home"],
+  #app[data-start="species"] {
+    --map-inset-bottom: calc(100dvh - var(--start-band)) !important;
+  }
+
+  #app[data-start="place"] {
+    --map-inset-bottom: 0px !important;
+  }
+
+  #app[data-start="home"] #map .maplibregl-ctrl-top-right,
+  #app[data-start="species"] #map .maplibregl-ctrl-top-right,
+  #app[data-start="home"] #map .maplibregl-ctrl-bottom-left,
+  #app[data-start="species"] #map .maplibregl-ctrl-bottom-left {
+    display: none;
+  }
+
+  /* The place step is a card at the top, so the map below can be tapped. */
+  #start[data-view="place"] .start__sheet {
+    top: 0;
+    bottom: auto;
+    max-height: 100%;
+    padding-top: env(safe-area-inset-top);
+    border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+    box-shadow: var(--elev-2);
+  }
+
+  #start[data-view="place"] .start__scroll {
+    padding-bottom: 1rem;
+  }
+
+  #start[data-view="place"] .start__brand {
+    display: none; /* the card has the top of the screen */
+  }
+
+  #start[data-view="species"] .start__scroll {
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+  }
+
+  .start__bar {
+    margin-top: 0.4rem;
+  }
+}
+
+/* Narrow phones. */
+/* The narrowest phones: the words need the width more than the drawing does. */
+@media (max-width: 339.98px) {
+  .flow__art {
+    display: none;
+  }
+
+  .flow--hero {
+    padding-right: 1rem;
+  }
+}
+
+@media (max-width: 379.98px) {
+  .start__title:not(.start__title--step) {
+    font-size: 1.5rem;
+  }
+
+  .flow--hero .flow__title {
+    font-size: var(--text-lg);
+  }
+
+  .flow--species .flow__thumb {
+    width: 2.5rem;
+    height: 2.5rem;
+    margin-left: -0.9rem;
+  }
+
+  .flow__thumbs {
+    padding-left: 0.9rem;
+  }
+
+  .flow__art {
+    width: 5rem;
+    height: 5rem;
+  }
+
+  .flow--tile {
+    padding: 0.6rem 0.65rem;
+  }
+
+  .flow__head {
+    gap: 0.45rem;
+  }
+
+  .flow__icon {
+    width: 2rem;
+    height: 2rem;
+  }
+
+  .flow__icon--photos .flow__thumb {
+    width: 2rem;
+    height: 2rem;
+  }
+
+  .flow--tile .flow__title {
+    font-size: 1rem;
+  }
+}
+
+/* Tall phones (an installed app, or a browser with its bars away): more air,
+   and the two small cards stand upright again. */
+@media (max-width: 719.98px) and (min-height: 780px) {
+  .start__head {
+    margin-top: 1.1rem;
+  }
+
+  .start__title:not(.start__title--step) {
+    font-size: var(--text-2xl);
+  }
+
+  .start__flows {
+    gap: 0.75rem;
+    margin-top: 1rem;
+  }
+
+  .flow {
+    padding: 1rem;
+  }
+
+  .flow--hero {
+    min-height: 7.75rem;
+    padding: 1.1rem 0.5rem 1.1rem 1.15rem;
+  }
+
+  .flow--hero .flow__title {
+    font-size: var(--text-xl);
+  }
+
+  .flow__art {
+    width: 6.25rem;
+    height: 6.25rem;
+    margin-bottom: -1.6rem;
+  }
+
+  .flow--tile {
+    min-height: 8rem;
+    padding: 0.9rem;
+  }
+
+  .flow__head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.6rem;
+  }
+
+  .flow__icon,
+  .flow__icon--photos .flow__thumb {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+
+  .flow--tile .flow__title {
+    font-size: var(--text-lg);
+  }
+
+  .start__flow.has-pin > .flow {
+    padding-bottom: 2.5rem;
+  }
+
+  .flow__change {
+    bottom: 0.55rem;
+    left: 0.9rem;
+  }
+
+  .flow--hero + .flow__change {
+    left: 1.15rem;
+  }
+
+  .start__safety {
+    padding-top: 0.65rem;
+    font-size: var(--text-sm);
+  }
+}
+
+/* --- sidebar layout: the layer is the sidebar's content -------------------- */
+@media (min-width: 720px), (min-width: 560px) and (max-height: 520px) {
+  #start {
+    right: auto;
+    display: flex;
+    flex-direction: column;
+    width: var(--sidebar-w);
+    padding-left: env(safe-area-inset-left);
+    border-right: 1px solid var(--border);
+    background: var(--bg);
+    box-shadow: 1px 0 12px rgb(30 38 32 / 0.08);
+    pointer-events: auto;
+  }
+
+  .start__brand {
+    position: static;
+    flex: none;
+    gap: 0.6rem;
+    height: 3.5rem;
+    padding: 0.25rem var(--gutter) 0;
+    border: none;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+
+  .start__mark {
+    width: 1.9rem;
+    height: 1.9rem;
+  }
+
+  .start__wordmark {
+    font-size: var(--text-xl);
+  }
+
+  .start__tag {
+    display: block;
+  }
+
+  .start__sheet {
+    position: static;
+    flex: 1;
+    min-height: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+
+  .start__scroll {
+    padding: 0 var(--gutter) 0.25rem;
+  }
+
+  #start[data-view="place"] .start__scroll,
+  #start[data-view="species"] .start__scroll {
+    padding-bottom: 1.25rem;
+  }
+
+  .start__safety {
+    padding: 0.55rem var(--gutter) 0.15rem;
+  }
+
+  .start__head {
+    margin-top: 0.6rem;
+  }
+
+  .start__maphint {
+    display: flex;
+  }
+
+  .start__bar {
+    margin-top: 0.25rem;
+  }
+}
+
+@media (min-width: 720px) and (max-width: 1099.98px) {
+  .start__tag {
+    display: none;
+  }
+}
+
+/* A tall sidebar has room to let the cards breathe. */
+@media (min-width: 720px) and (min-height: 800px) {
+  .start__brand {
+    height: 4rem;
+  }
+
+  .start__head {
+    margin-top: 1.5rem;
+  }
+
+  .start__title:not(.start__title--step) {
+    font-size: var(--text-2xl);
+  }
+
+  .start__flows {
+    gap: 0.85rem;
+    margin-top: 1.5rem;
+  }
+
+  .flow {
+    padding: 1rem;
+  }
+
+  .flow--hero {
+    min-height: 9.5rem;
+    padding: 1.35rem 0.5rem 1.35rem 1.15rem;
+  }
+
+  .flow--hero .flow__title {
+    font-size: 1.5rem;
+  }
+
+  .flow--hero .flow__sub,
+  .flow--species .flow__sub {
+    font-size: var(--text-base);
+  }
+
+  .flow__art {
+    width: 7rem;
+    height: 7rem;
+    margin-bottom: -1.6rem;
+  }
+
+  .flow--species {
+    min-height: 6.5rem;
+  }
+
+  .flow--tile {
+    min-height: 9rem;
+    padding: 1.1rem 1rem;
+  }
+
+  .flow__head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.7rem;
+  }
+
+  .flow__icon,
+  .flow__icon--photos .flow__thumb {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+
+  .flow--tile .flow__title {
+    font-size: var(--text-lg);
+  }
+
+  .start__flow.has-pin > .flow {
+    padding-bottom: 2.6rem;
+  }
+
+  .flow__change {
+    bottom: 0.65rem;
+    left: 1rem;
+  }
+
+  .flow--hero + .flow__change {
+    left: 1.15rem;
+  }
+
+  .start__maphint {
+    margin-top: 1rem;
+  }
+
+  .start__safety {
+    padding-top: 0.7rem;
+    padding-bottom: 0.4rem;
+    font-size: var(--text-sm);
+  }
+}
+
+/* Short landscape phones: the sidebar is narrow and low. Titles only, so all
+   four ways in show above the safety strip, which keeps its first sentence
+   and the number. */
+@media (min-width: 560px) and (max-height: 520px) {
+  .start__brand {
+    height: 2.5rem;
+  }
+
+  .start__mark {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+
+  .start__wordmark {
+    font-size: var(--text-lg);
+  }
+
+  .start__tag,
+  .start__maphint,
+  .start__flows .flow__sub,
+  .start__safety p span {
+    display: none;
+  }
+
+  .start__head {
+    margin-top: 0;
+  }
+
+  .start__title:not(.start__title--step) {
+    font-size: 1.375rem;
+  }
+
+  .start__flows {
+    gap: 0.45rem;
+    margin-top: 0.5rem;
+  }
+
+  .flow--hero {
+    min-height: 3.75rem;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+
+  .flow--hero .flow__title {
+    font-size: var(--text-lg);
+  }
+
+  .flow__art {
+    width: 4rem;
+    height: 4rem;
+    margin-bottom: -1.2rem;
+  }
+
+  .flow--species {
+    padding-top: 0.4rem;
+    padding-bottom: 0.4rem;
+  }
+
+  .flow--species .flow__thumb {
+    width: 2.25rem;
+    height: 2.25rem;
+    margin-left: -0.9rem;
+  }
+
+  .flow--tile {
+    justify-content: center;
+    padding: 0.4rem 0.6rem;
+  }
+
+  .flow--tile .flow__title {
+    font-size: 1rem;
+  }
+
+  .flow__icon,
+  .flow__icon--photos .flow__thumb {
+    width: 2rem;
+    height: 2rem;
+  }
+
+  .flow__icon--photos .flow__thumb:nth-child(n + 2) {
+    display: none;
+  }
+
+  .start__safety {
+    padding-top: 0.4rem;
+  }
+}
+
+/* --- motion ------------------------------------------------------------------
+   Arriving from the main interface and leaving for it take a fifth of a
+   second: the layer fades (and on a phone slides a little) while what is
+   behind it shows through; on a phone the main sheet rises as it does. Within
+   the layer, the content of a view rises in, lightly staggered. All of it is
+   off under prefers-reduced-motion (start.ts then never marks the states). */
+#app[data-start-leaving] #start,
+#app[data-start-leaving] #start * {
+  pointer-events: none !important;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  #app[data-start-entering] #start {
+    animation: start-fade-in 0.2s var(--ease-out) both;
+  }
+
+  #app[data-start-leaving] #start {
+    animation: start-fade-out 0.2s var(--ease-out) both;
+  }
+
+  #app[data-start] .start__view > *,
+  #app[data-start] .start__flow {
+    animation: start-rise 0.32s var(--ease-out) both;
+  }
+
+  .start__view > :nth-child(2) {
+    animation-delay: 30ms;
+  }
+
+  .start__view > :nth-child(3),
+  .start__flow:nth-child(2) {
+    animation-delay: 60ms;
+  }
+
+  .start__view > :nth-child(n + 4),
+  .start__flow:nth-child(n + 3) {
+    animation-delay: 90ms;
+  }
+
+  /* the list itself does not move twice: its cards do */
+  #app[data-start] .start__view > .start__flows {
+    animation: none;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) and (max-width: 559.98px),
+  (prefers-reduced-motion: no-preference) and (max-width: 719.98px) and (min-height: 520.02px) {
+  #app[data-start-entering] #start {
+    animation-name: start-slide-in;
+  }
+
+  #app[data-start-leaving] #start {
+    animation-name: start-slide-out;
+  }
+
+  /* (translate, not transform: the sheet's transform is its snap position) */
+  #app[data-start-leaving] #sheet {
+    animation: start-main-rise 0.22s var(--ease-out) both;
+  }
+}
+
+@keyframes start-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes start-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes start-slide-in {
+  from {
+    opacity: 0;
+    translate: 0 1.25rem;
+  }
+}
+
+@keyframes start-slide-out {
+  to {
+    opacity: 0;
+    translate: 0 1.25rem;
+  }
+}
+
+@keyframes start-main-rise {
+  from {
+    opacity: 0;
+    translate: 0 2rem;
+  }
+}
+
+@keyframes start-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flow,
+  .place__option,
+  .start__skip svg,
+  .tile__photo,
+  .flow__thumb img,
+  .tile__photo img {
+    transition: none;
+  }
+
+  .flow:hover,
+  .flow:active,
+  .place__option:active,
+  .tile:active .tile__photo {
+    transform: none;
+  }
+
+  /* no spinning: the label says what is going on */
+  .place__option[data-state="busy"] .place__spinner,
+  .tile[data-state="loading"] .tile__photo::after {
+    animation: none;
+    border-top-color: currentColor;
+    opacity: 0.6;
+  }
+}
+
+/* =====================================================================
+   "Home": the ways back to the start screen from the main interface.
+   ===================================================================== */
+
+/* A house beside the Svampe/Skove switch, at every size. */
+#sheet-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.25rem var(--gutter) 0.375rem;
+}
+
+#sheet-nav #mobile-tabs {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+}
+
+#home-button {
+  position: relative;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: calc(var(--tabbar-h) + 4px);
+  height: calc(var(--tabbar-h) + 4px);
+  padding: 0;
+  border: none;
+  border-radius: calc(var(--radius-m) + 2px);
+  background: color-mix(in srgb, var(--border) 55%, var(--bg));
+  color: var(--muted);
+  cursor: pointer;
+}
+
+/* 44px touch target around the 38px button */
+#home-button::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+}
+
+#home-button svg {
+  width: 1.3rem;
+  height: 1.3rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+#home-button:hover {
+  color: var(--ink);
+}
+
+/* Phone: the mark in the address field is a button too. */
+.search-home {
+  position: absolute;
+  z-index: 1;
+  top: 0.125rem;
+  left: 0.125rem;
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  cursor: pointer;
+}
+
+.search-home .search-icon {
+  position: static;
+}
+
+@media (hover: hover) {
+  .search-home:hover {
+    background: var(--bg);
+  }
+}
+
+@media (min-width: 720px), (min-width: 560px) and (max-height: 520px) {
+  #sheet-nav {
+    margin-top: 0.5rem;
+    margin-bottom: 0.7rem;
+    --tabbar-h: 2.375rem;
+  }
+
+  .search-home {
+    display: none;
+  }
+
+  /* The wordmark is a button here. */
+  #brand {
+    width: 100%;
+    border: none;
+    background: none;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  #brand:focus-visible {
+    outline-offset: -3px;
+  }
+}

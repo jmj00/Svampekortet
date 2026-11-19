@@ -1,0 +1,74 @@
+{
+  "version": "2026-09-02T11:13:33Z",
+  "terms": [
+    "habitat",
+    "seasonality",
+    "weather"
+  ],
+  "seasonality_sigma_days": 15.0,
+  "weather_features": [
+    "precip_14d_mm",
+    "precip_30d_mm",
+    "mean_temp_14d_c",
+    "dry_days_30d"
+  ],
+  "current_conditions": "model/current.json",
+  "backtest": null,
+  "backtest_report": null,
+  "species": [
+    {
+      "slug": "cantharellus-cibarius",
+      "scientific_name": "Cantharellus cibarius",
+      "file": "model/cantharellus-cibarius.json",
+      "n_observations": 2471,
+      "bandwidth_km": 1.739,
+      "weather_fitted": true,
+      "calibrated": false
+    },
+    {
+      "slug": "craterellus-tubaeformis",
+      "scientific_name": "Craterellus tubaeformis",
+      "file": "model/craterellus-tubaeformis.json",
+      "n_observations": 1510,
+      "bandwidth_km": 1.5,
+      "weather_fitted": true,
+      "calibrated": false
+    },
+    {
+      "slug": "boletus-edulis",
+      "scientific_name": "Boletus edulis",
+      "file": "model/boletus-edulis.json",
+      "n_observations": 3013,
+      "bandwidth_km": 2.093,
+      "weather_fitted": true,
+      "calibrated": false
+    },
+    {
+      "slug": "imleria-badia",
+      "scientific_name": "Imleria badia",
+      "file": "model/imleria-badia.json",
+      "n_observations": 3101,
+      "bandwidth_km": 1.822,
+      "weather_fitted": true,
+      "calibrated": false
+    },
+    {
+      "slug": "suillus-luteus",
+      "scientific_name": "Suillus luteus",
+      "file": "model/suillus-luteus.json",
+      "n_observations": 1127,
+      "bandwidth_km": 3.236,
+      "weather_fitted": true,
+      "calibrated": false
+    },
+    {
+      "slug": "suillus-variegatus",
+      "scientific_name": "Suillus variegatus",
+      "file": "model/suillus-variegatus.json",
+      "n_observations": 621,
+      "bandwidth_km": 2.66,
+      "weather_fitted": true,
+      "calibrated": false
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "usageKey": 5954958,
+  "scientificName": "Boletus edulis Bull.",
+  "canonicalName": "Boletus edulis",
+  "rank": "SPECIES",
+  "status": "ACCEPTED",
+  "confidence": 97,
+  "matchType": "EXACT",
+  "kingdom": "Fungi",
+  "phylum": "Basidiomycota",
+  "order": "Boletales",
+  "family": "Boletaceae",
+  "genus": "Boletus",
+  "species": "Boletus edulis",
+  "kingdomKey": 5,
+  "phylumKey": 34,
+  "classKey": 186,
+  "orderKey": 1063,
+  "familyKey": 8789,
+  "genusKey": 8287374,
+  "speciesKey": 5954958,
+  "class": "Agaricomycetes"
+}

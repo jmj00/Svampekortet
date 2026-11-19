@@ -1,0 +1,29 @@
+{
+  "pages": 166,
+  "page": 1,
+  "total": 3303,
+  "data": [
+    {
+      "taxonId": 34,
+      "scientificName": "Abortiporus biennis",
+      "vernacularName": "Rødmende pjalteporesvamp",
+      "population": "National",
+      "redlistCategory": "LC",
+      "family": "Meruliaceae",
+      "order": "Polyporales",
+      "overallSpeciesGroup": "Svampe",
+      "arterDkId": "867c11f4-f785-ea11-aa77-501ac539d1ea"
+    },
+    {
+      "taxonId": 81,
+      "scientificName": "Acanthobasidium delicatum",
+      "vernacularName": "Tagrør-skiveskorpe",
+      "population": "National",
+      "redlistCategory": "DD",
+      "family": "Stereaceae",
+      "order": "Russulales",
+      "overallSpeciesGroup": "Svampe",
+      "arterDkId": "c58e515c-c515-463e-ae09-acf300a4f0b9"
+    }
+  ]
+}

@@ -1,0 +1,105 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "id": "680233b4-f2bd-b87f-0d1c-ff687be13cd2",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              9.321,
+              56.0348
+            ],
+            [
+              9.4814,
+              56.0343
+            ],
+            [
+              9.4826,
+              56.1241
+            ],
+            [
+              9.3217,
+              56.1247
+            ],
+            [
+              9.321,
+              56.0348
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "parameterId": "mean_temp",
+        "qcStatus": "manual",
+        "created": "2025-10-27T20:47:04+00:00",
+        "timeResolution": "day",
+        "from": "2023-08-03T00:00:00.001000+02:00",
+        "to": "2023-08-04T00:00:00+02:00",
+        "cellId": "10km_621_52",
+        "value": 16.2,
+        "calculatedAt": "2025-07-24T12:26:48.207000"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "07e8880a-495d-9e08-4e4d-508f0f56c6a1",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              9.321,
+              56.0348
+            ],
+            [
+              9.4814,
+              56.0343
+            ],
+            [
+              9.4826,
+              56.1241
+            ],
+            [
+              9.3217,
+              56.1247
+            ],
+            [
+              9.321,
+              56.0348
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "parameterId": "mean_temp",
+        "qcStatus": "manual",
+        "created": "2025-10-27T20:56:36+00:00",
+        "timeResolution": "day",
+        "from": "2023-08-02T00:00:00.001000+02:00",
+        "to": "2023-08-03T00:00:00+02:00",
+        "cellId": "10km_621_52",
+        "value": 15.6,
+        "calculatedAt": "2025-08-27T22:09:23.926000"
+      }
+    }
+  ],
+  "timeStamp": "2026-09-01T12:50:14Z",
+  "numberReturned": 2,
+  "links": [
+    {
+      "href": "https://opendataapi.dmi.dk/v2/climateData/collections/10kmGridValue/items?parameterId=mean_temp&timeResolution=day&datetime=2023-08-01T00%3A00%3A00Z%2F2023-08-03T00%3A00%3A00Z&bbox=9.4%2C56.1%2C9.6%2C56.3&limit=2",
+      "rel": "self",
+      "type": "application/geo+json",
+      "title": "This document"
+    },
+    {
+      "href": "https://opendataapi.dmi.dk/v2/climateData/collections/10kmGridValue/items?parameterId=mean_temp&timeResolution=day&datetime=2023-08-01T00%3A00%3A00Z%2F2023-08-03T00%3A00%3A00Z&bbox=9.4%2C56.1%2C9.6%2C56.3&limit=2&offset=2",
+      "rel": "next",
+      "type": "application/geo+json",
+      "title": "Next set of results"
+    }
+  ]
+}

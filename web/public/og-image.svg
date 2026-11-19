@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="Svampekortet – kort over danske spisesvampe">
+  <rect width="1200" height="630" fill="#f4f3ee" />
+
+  <!-- faint scattered map pins -->
+  <g fill="#b26b18" opacity="0.09">
+    <circle cx="1044" cy="96" r="11" />
+    <circle cx="1122" cy="186" r="7" />
+    <circle cx="968" cy="228" r="6" />
+    <circle cx="1096" cy="452" r="10" />
+    <circle cx="1012" cy="536" r="6" />
+    <circle cx="146" cy="70" r="6" />
+    <circle cx="92" cy="150" r="8" />
+  </g>
+
+  <!-- mushroom mark, from favicon.svg (viewBox 0 0 64 64), scaled x4.4 -> 282 px -->
+  <g transform="translate(104,174) scale(4.4)">
+    <path d="M26 33h12v17a6 6 0 0 1-12 0z" fill="#e7dfc9" />
+    <path d="M10 33c0-15 11-24 22-24s22 9 22 24c0 3-6 5-22 5s-22-2-22-5z" fill="#b26b18" />
+    <path d="M16 34c6-3 26-3 32 0" fill="none" stroke="#8f5310" stroke-width="2" stroke-linecap="round" opacity="0.55" />
+  </g>
+
+  <text x="446" y="288" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="92" font-weight="700" fill="#232620">Svampekortet</text>
+  <text x="448" y="348" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="34" fill="#6c6f61">Kort over danske spisesvampe –</text>
+  <text x="448" y="392" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="34" fill="#6c6f61">hvor de før er fundet, og hvornår.</text>
+  <rect x="448" y="428" width="132" height="6" rx="3" fill="#b26b18" />
+</svg>

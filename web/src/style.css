@@ -1,0 +1,3482 @@
+:root {
+  /* Woodland palette: warm paper, forest ink, chanterelle accent. */
+  --bg: #f3f0e7;
+  --surface: #fffdf8;
+  --ink: #1e2620;
+  --muted: #5d6355;
+  --border: #dfdacb;
+  --accent: #b26b18;
+  /* darker accent for text: --accent itself is 4.2:1 on --surface, below AA */
+  --link: #8a4c0c;
+  /* conditions-score scale for the panel (score pills, gauges): poor ->
+     middling -> good. The forests coloured by score on the map have their own
+     scale, in palette.ts (forestRamp). */
+  --score-low: #a0512f;
+  --score-mid: #99690f;
+  --score-good: #587634;
+  /* Height of one button in the Svampe/Skove switch (#mobile-tabs). */
+  --tabbar-h: 2.125rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #151813;
+    --surface: #1e221c;
+    --ink: #ece9dc;
+    --muted: #a3a694;
+    --border: #353b30;
+    --accent: #e0a052;
+    --link: var(--accent); /* 7:1 on dark --surface, no separate shade needed */
+    --score-low: #d07a56;
+    --score-mid: #d6a33f;
+    --score-good: #86a955;
+  }
+}
+
+/* --- shell tokens (added by the app shell; free for every view to use) --- */
+:root {
+  /* colour */
+  --brand: #2f4a36; /* moss green: wordmark, active states */
+  --border-strong: #c3bda9; /* grab handle, dividers that must be seen */
+  --mark-stem: #d8cba6; /* stem of the mushroom mark */
+  --focus: var(--accent);
+
+  /* type: system UI for reading, a book serif for names and the wordmark */
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display:
+    "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, ui-serif, serif;
+  --text-xs: 0.75rem;
+  --text-sm: 0.8125rem;
+  --text-base: 0.9375rem;
+  --text-md: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.375rem;
+  --text-2xl: 1.75rem;
+
+  /* spacing (4px grid) */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --gutter: 1rem; /* side padding of the sheet / sidebar content */
+
+  /* shape */
+  --radius-s: 6px;
+  --radius-m: 10px;
+  --radius-l: 16px;
+  --radius-xl: 22px;
+  --radius-pill: 999px;
+
+  /* elevation: 1 = resting control, 2 = floating over the map, sheet = the sheet */
+  --elev-1: 0 1px 2px rgb(30 38 32 / 0.1), 0 1px 5px rgb(30 38 32 / 0.06);
+  --elev-2: 0 1px 3px rgb(30 38 32 / 0.14), 0 6px 20px rgb(30 38 32 / 0.12);
+  --elev-sheet: 0 -1px 3px rgb(30 38 32 / 0.1), 0 -10px 30px rgb(30 38 32 / 0.14);
+
+  /* layout + motion */
+  --sidebar-w: clamp(22rem, 30vw, 27rem);
+  --dur-sheet: 300ms;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  /* Top edge shared by the floating search and the fully open sheet. */
+  --shell-top: max(0.75rem, env(safe-area-inset-top));
+}
+
+/* Registered so that moving the sheet restyles the sheet alone, not its subtree. */
+@property --sheet-y {
+  syntax: "<length-percentage>";
+  inherits: false;
+  initial-value: 0px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --brand: #a8c79f;
+    --border-strong: #545b4b;
+    --mark-stem: #cfc4a2;
+    --elev-1: 0 1px 2px rgb(0 0 0 / 0.4), 0 1px 5px rgb(0 0 0 / 0.25);
+    --elev-2: 0 1px 3px rgb(0 0 0 / 0.45), 0 6px 20px rgb(0 0 0 / 0.4);
+    --elev-sheet: 0 -1px 3px rgb(0 0 0 / 0.4), 0 -10px 30px rgb(0 0 0 / 0.45);
+  }
+}
+
+@media (min-width: 720px) {
+  :root {
+    --gutter: 1.25rem;
+  }
+}
+
+/* Species list tokens (specieslist.ts). Built on the shared tokens above. */
+:root {
+  --sp-thumb: 3rem;
+  --sp-radius: 10px;
+  --sp-season: var(--score-good);
+  /* the cross of the search field's clear button, used as a mask */
+  --sp-cross: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2 2l8 8M10 2l-8 8' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E");
+}
+
+/* --- map tokens (map layers, legend, find popup, pin) ---
+   --find / --find-deep: one species' finds and the deep end of their density
+   ramp. Kept in step with FIND_* in palette.ts, which feeds the same colours
+   to MapLibre's paint expressions. */
+:root {
+  --find: #b3306b;
+  --find-deep: #7d1747;
+  --map-shadow: 0 2px 10px rgb(0 0 0 / 0.16);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --find: #f0679f;
+    --find-deep: #ff9cc4;
+    --map-shadow: 0 2px 12px rgb(0 0 0 / 0.5);
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden; /* the app is one screen; only the sheet content scrolls */
+  overscroll-behavior: none;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font: var(--text-base) / 1.5 var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Form controls take the app's typeface instead of the browser's own. */
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+  color: inherit;
+}
+
+h1,
+h2 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* The search fields' built-in clear button, drawn in the app's own line style. */
+input[type="search"]::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin: 0 0 0 0.4rem;
+  background: var(--muted);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='m7 7 10 10M17 7 7 17'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='m7 7 10 10M17 7 7 17'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+  cursor: pointer;
+}
+
+/* --- app shell: map + floating address search + sheet/sidebar ------------- */
+#app {
+  position: relative;
+  height: 100dvh;
+  overflow: hidden;
+  /* How much of the map's box the shell covers on each side. Anything that
+     floats over the map (controls, hints) can place itself inside what is
+     left. sheet.ts keeps --map-inset-bottom current on the phone. */
+  --map-inset-top: calc(var(--shell-top) + 3.5rem);
+  --map-inset-bottom: 53dvh;
+  --map-inset-left: 0px;
+}
+
+/* Phone: the map fills the screen and the sheet rides over it. */
+#map {
+  position: absolute;
+  inset: 0;
+}
+
+#search {
+  position: absolute;
+  /* Above the sheet and the map controls, so the address dropdown is never
+     hidden under whatever it lands on while open. */
+  z-index: 5;
+  top: var(--shell-top);
+  left: max(0.75rem, env(safe-area-inset-left));
+  right: max(0.75rem, env(safe-area-inset-right));
+  margin: 0;
+}
+
+.search-icon {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.9rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  pointer-events: none;
+}
+
+.search-icon--find {
+  display: none;
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 1.75;
+  stroke-linecap: round;
+}
+
+.mark-cap {
+  fill: var(--accent);
+}
+
+.mark-stem {
+  fill: var(--mark-stem);
+}
+
+#q {
+  width: 100%;
+  height: 3rem;
+  padding: 0 0.9rem 0 3rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 1rem; /* 16px: below this iOS zooms the page on focus */
+  box-shadow: var(--elev-2);
+}
+
+#q::placeholder {
+  color: var(--muted);
+  opacity: 1;
+}
+
+#q:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+
+#results {
+  list-style: none;
+  margin: 0.4rem 0 0;
+  padding: 0.3rem;
+  max-height: min(60dvh, 24rem);
+  overflow-y: auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-l);
+  box-shadow: var(--elev-2);
+}
+
+#results:empty {
+  display: none;
+}
+
+#results li {
+  display: flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0.4rem 0.75rem;
+  border-radius: var(--radius-m);
+  line-height: 1.3;
+  cursor: pointer;
+}
+
+#results li:hover,
+#results li:focus-visible,
+#results li.is-active {
+  background: var(--bg);
+}
+
+/* --- location chip: where the pin is, in words --------------------------- */
+#location {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 2.5rem;
+  padding: 0 0.25rem 0 var(--gutter);
+}
+
+.location-icon {
+  flex: none;
+  width: 2rem;
+  height: 2rem;
+  padding: 0.35rem;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent) 16%, var(--surface));
+  fill: none;
+  stroke: var(--link);
+  stroke-width: 1.75;
+  stroke-linejoin: round;
+}
+
+#location[data-state="empty"] .location-icon {
+  background: var(--bg);
+  stroke: var(--muted);
+}
+
+#readout {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  font-size: var(--text-base);
+  line-height: 1.25;
+}
+
+#location[data-state="empty"] #readout {
+  color: var(--muted);
+}
+
+.loc-title {
+  overflow: hidden;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.loc-sub {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* A short pulse when the app points at the chip ("set a pin first"). */
+#location.is-nudged .location-icon {
+  animation: location-nudge 0.9s var(--ease-out);
+}
+
+@keyframes location-nudge {
+  30% {
+    background: var(--accent);
+    stroke: var(--surface);
+    transform: scale(1.15);
+  }
+}
+
+#clear-pin {
+  position: relative;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+/* 44px touch target around the 40px button */
+#clear-pin::after {
+  content: "";
+  position: absolute;
+  inset: -2px;
+}
+
+#clear-pin[hidden] {
+  display: none;
+}
+
+#clear-pin svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+}
+
+#clear-pin:hover {
+  background: var(--bg);
+  color: var(--ink);
+}
+
+/* --- #forest-finder: the "Skove" view inside the sheet / sidebar. Only the
+   box is the shell's; what is in it belongs to the forest finder. --- */
+#forest-finder {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 0.4rem;
+  padding: 0.9rem var(--gutter) calc(1rem + env(safe-area-inset-bottom));
+}
+
+/* The contents of #forest-finder are styled in the FORESTS, ONBOARDING AND
+   ABOUT section at the end of this file. */
+
+/* Colour key for the multi-species dots (observations.ts's showObservationsForSpecies),
+   rendered by panel.ts right above the list it explains -- previously a
+   separate floating widget, which had nowhere good to sit once the map,
+   search, forest-finder and panel all needed their own space on a phone. */
+.panel-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 0.7rem;
+  margin: 0 0 0.6rem;
+  padding: 0;
+  list-style: none;
+}
+
+.panel-legend:empty {
+  display: none;
+}
+
+.panel-legend li {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.legend-swatch {
+  width: 0.65rem;
+  height: 0.65rem;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  border: 1px solid rgb(0 0 0 / 0.15);
+}
+
+/* --- #panel: the "Svampe" view (list, species detail, About) inside the
+   sheet / sidebar. It is the scroll container for its own content; its height
+   comes from the sheet, so no view needs a max-height of its own. --- */
+#panel {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0.9rem var(--gutter) calc(1rem + env(safe-area-inset-bottom));
+  -webkit-overflow-scrolling: touch;
+}
+
+/* --- sheet (phone) / sidebar (desktop): the one container for everything
+   that is not the map. Behaviour in src/sheet.ts. --- */
+#sheet {
+  position: absolute;
+  z-index: 3;
+  top: calc(var(--shell-top) + 3rem + 0.5rem); /* fully open: just below the search */
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  /* The part of the sheet hanging below the screen at the current snap, kept
+     out of the scroll area so the content can always be scrolled to its end. */
+  padding-bottom: var(--sheet-hidden, 0px);
+  background: var(--surface);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  box-shadow: var(--elev-sheet);
+  /* sheet.ts sets --sheet-y; until it has measured, 42% is roughly the half snap. */
+  --sheet-y: 42%;
+  transform: translate3d(0, var(--sheet-y), 0);
+}
+
+/* Probe: sheet.ts reads the home-indicator inset from this height. */
+#sheet::after {
+  content: "";
+  position: absolute;
+  width: 0;
+  height: env(safe-area-inset-bottom, 0px);
+  visibility: hidden;
+  pointer-events: none;
+}
+
+#app[data-sheet-ready] #sheet {
+  transition: transform var(--dur-sheet) var(--ease-out);
+}
+
+#app[data-sheet-dragging] #sheet {
+  transition: none;
+}
+
+#sheet-header {
+  flex: none;
+  /* The whole header is the drag surface; taps on its buttons still click. */
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#sheet-handle {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 0.875rem;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: grab;
+}
+
+#sheet-handle::before {
+  content: "";
+  position: absolute;
+  top: 0.4rem;
+  left: 50%;
+  width: 2.5rem;
+  height: 0.25rem;
+  margin-left: -1.25rem;
+  border-radius: var(--radius-pill);
+  background: var(--border-strong);
+}
+
+/* 44px touch target around the small visible pill. */
+#sheet-handle::after {
+  content: "";
+  position: absolute;
+  top: -0.75rem;
+  left: 50%;
+  width: 6rem;
+  height: 2.75rem;
+  margin-left: -3rem;
+}
+
+#sheet-handle:focus-visible {
+  outline: none;
+}
+
+#sheet-handle:focus-visible::before {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
+}
+
+#app[data-sheet-dragging] #sheet-handle::before {
+  background: var(--muted);
+}
+
+#sheet-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--border);
+}
+
+/* Until the sheet is fully open, a vertical drag on the content moves the
+   sheet (sheet.ts); sideways swipes (the photo strip) stay with the browser. */
+@media (max-width: 559.98px), (max-width: 719.98px) and (min-height: 520.02px) {
+  #sheet:not([data-snap="full"]) #sheet-body,
+  #sheet:not([data-snap="full"]) #sheet-body * {
+    touch-action: pan-x;
+  }
+}
+
+/* Wordmark: desktop only. On the phone the mark lives in the search field. */
+#brand {
+  display: none;
+}
+
+/* --- Svampe / Skove switch. Kept as #mobile-tabs with its data-tab buttons;
+   it is now a segmented control in the sheet header at every size. --- */
+#mobile-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  margin: 0.25rem var(--gutter) 0.375rem;
+  padding: 2px;
+  background: color-mix(in srgb, var(--border) 55%, var(--bg));
+  border-radius: calc(var(--radius-m) + 2px);
+}
+
+#mobile-tabs button {
+  display: flex;
+  align-items: center;
+  position: relative;
+  justify-content: center;
+  gap: 0.45rem;
+  min-height: var(--tabbar-h);
+  padding: 0 0.75rem;
+  border: none;
+  border-radius: var(--radius-m);
+  background: none;
+  color: var(--muted);
+  font-size: var(--text-base);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* 44px touch target around the 34px button */
+#mobile-tabs button::after {
+  content: "";
+  position: absolute;
+  inset: -5px 0;
+}
+
+#mobile-tabs svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+#mobile-tabs button:hover {
+  color: var(--ink);
+}
+
+#mobile-tabs button[aria-pressed="true"] {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--elev-1);
+}
+
+#mobile-tabs button[aria-pressed="true"] svg {
+  stroke: var(--brand);
+}
+
+@media (prefers-color-scheme: dark) {
+  /* --surface on --bg is too close in the dark to read as "selected" */
+  #mobile-tabs button[aria-pressed="true"] {
+    background: color-mix(in srgb, var(--ink) 11%, var(--surface));
+  }
+}
+
+#mobile-tabs button:focus-visible {
+  outline-offset: -2px;
+}
+
+#app[data-mobile-tab="svampe"] #forest-finder,
+#app[data-mobile-tab="skove"] #panel {
+  display: none;
+}
+
+/* --- desktop: sidebar + map, side by side. Also used by phones in landscape
+   (short and at least 560px wide), where a bottom sheet would leave no map. --- */
+@media (min-width: 720px), (min-width: 560px) and (max-height: 520px) {
+  #app {
+    --map-inset-top: 0px;
+    --map-inset-bottom: 0px;
+    --map-inset-left: var(--sidebar-w);
+    display: grid;
+    grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+  }
+
+  #sheet {
+    position: relative;
+    inset: auto;
+    grid-column: 1;
+    grid-row: 1;
+    min-height: 0;
+    padding-bottom: 0;
+    padding-left: env(safe-area-inset-left);
+    border-right: 1px solid var(--border);
+    border-radius: 0;
+    box-shadow: 1px 0 12px rgb(30 38 32 / 0.08);
+    transform: none;
+    transition: none;
+  }
+
+  #map {
+    position: relative;
+    inset: auto;
+    grid-column: 2;
+    grid-row: 1;
+    min-height: 0;
+  }
+
+  #sheet-header {
+    touch-action: auto;
+    user-select: auto;
+    -webkit-user-select: auto;
+  }
+
+  #sheet-handle {
+    display: none;
+  }
+
+  #brand {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    height: 4rem;
+    /* room below the wordmark for the address search, which is positioned
+       into this gap (it has to stay outside the sheet for the phone layout) */
+    margin-bottom: calc(3.5rem + var(--search-status-h, 0px)); /* + a search message, if any */
+    padding: 0.25rem var(--gutter) 0;
+  }
+
+  .brand-mark {
+    flex: none;
+    width: 1.9rem;
+    height: 1.9rem;
+  }
+
+  .brand-name {
+    color: var(--brand);
+    font-family: var(--font-display);
+    font-size: var(--text-xl);
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    line-height: 1;
+  }
+
+  .brand-tag {
+    margin-left: auto;
+    white-space: nowrap;
+    color: var(--muted);
+    font-size: var(--text-xs);
+    letter-spacing: 0.02em;
+  }
+
+  #search {
+    top: 4rem;
+    left: calc(var(--gutter) + env(safe-area-inset-left));
+    right: auto;
+    width: calc(var(--sidebar-w) - 2 * var(--gutter));
+  }
+
+  .search-icon {
+    top: 0.7rem;
+    left: 0.8rem;
+    width: 1.35rem;
+    height: 1.35rem;
+  }
+
+  .search-icon--brand {
+    display: none;
+  }
+
+  .search-icon--find {
+    display: block;
+  }
+
+  #q {
+    height: 2.75rem;
+    padding-left: 2.6rem;
+    border-radius: var(--radius-m);
+    background: var(--bg);
+    box-shadow: none;
+  }
+
+  #q:focus {
+    background: var(--surface);
+  }
+
+  #mobile-tabs {
+    margin-top: 0.5rem;
+    margin-bottom: 0.7rem;
+    --tabbar-h: 2.375rem;
+  }
+}
+
+/* Narrow sidebars have no room for the tagline, and a narrow map none for the
+   scale beside the still-expanded attribution. */
+@media (max-width: 1099.98px) {
+  .brand-tag {
+    display: none;
+  }
+
+  #map:has(.maplibregl-ctrl-attrib.maplibregl-compact-show) .maplibregl-ctrl-scale {
+    visibility: hidden;
+  }
+}
+
+/* Short desktop/landscape windows: the wordmark gives its row to the content. */
+@media (min-width: 560px) and (max-height: 520px) {
+  :root {
+    --sidebar-w: min(22rem, 50vw);
+  }
+
+  #brand {
+    height: 0;
+    margin-bottom: calc(3.5rem + var(--search-status-h, 0px)); /* + a search message, if any */
+    padding: 0;
+    overflow: hidden;
+    visibility: hidden;
+  }
+
+  #search {
+    top: 0.5rem;
+  }
+}
+
+/* --- map controls (MapLibre's own, restyled to the shell) ---------------- */
+#map .maplibregl-ctrl-group {
+  overflow: hidden;
+  background: var(--surface);
+  border-radius: var(--radius-m);
+  box-shadow: var(--elev-2);
+}
+
+#map .maplibregl-ctrl-group button {
+  width: 2.5rem;
+  height: 2.5rem;
+  background-color: transparent;
+}
+
+#map .maplibregl-ctrl-group button + button {
+  border-top: 1px solid var(--border);
+}
+
+#map .maplibregl-ctrl-group button:not(:disabled):hover {
+  background-color: var(--bg);
+}
+
+#map .maplibregl-ctrl-group button:focus {
+  box-shadow: none;
+}
+
+#map .maplibregl-ctrl-group button:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -3px;
+}
+
+#map .maplibregl-ctrl-top-right .maplibregl-ctrl {
+  margin: 0.75rem 0.75rem 0 0;
+}
+
+#map .maplibregl-ctrl-bottom-left .maplibregl-ctrl {
+  margin: 0 0 0.6rem 0.75rem;
+}
+
+#map .maplibregl-ctrl-bottom-right .maplibregl-ctrl {
+  margin: 0 0.75rem 0.6rem 0;
+}
+
+#map .maplibregl-ctrl-scale {
+  padding: 0 0.4rem;
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+  border-color: var(--ink);
+  border-width: 0 1.5px 1.5px;
+  border-radius: 0 0 3px 3px;
+  color: var(--ink);
+  font: 600 0.6875rem / 1.4 var(--font-sans);
+}
+
+#map .maplibregl-ctrl-attrib {
+  background: color-mix(in srgb, var(--surface) 90%, transparent);
+  color: var(--muted);
+  font: 0.6875rem / 1.6 var(--font-sans);
+}
+
+#map .maplibregl-ctrl-attrib.maplibregl-compact {
+  min-height: 1.5rem;
+  border-radius: var(--radius-pill);
+}
+
+#map .maplibregl-ctrl-attrib a {
+  color: var(--ink);
+}
+
+#map .maplibregl-ctrl-attrib-button {
+  background-color: transparent;
+}
+
+@media (prefers-color-scheme: dark) {
+  /* MapLibre's icons are dark glyphs baked into background images. */
+  #map .maplibregl-ctrl-group .maplibregl-ctrl-icon,
+  #map .maplibregl-ctrl-attrib-button {
+    filter: invert(1) hue-rotate(180deg);
+  }
+}
+
+/* Phone: no zoom buttons (pinch does that), the compass only while the map is
+   turned, and "find me" as a thumb-reachable round button that rides the top
+   edge of the sheet together with the scale and the attribution. */
+@media (max-width: 559.98px), (max-width: 719.98px) and (min-height: 520.02px) {
+  #map .maplibregl-ctrl-bottom-left,
+  #map .maplibregl-ctrl-bottom-right {
+    bottom: var(--map-inset-bottom);
+  }
+
+  #map .maplibregl-ctrl-top-right {
+    top: auto;
+    bottom: calc(var(--map-inset-bottom) + 2.5rem);
+  }
+
+  #app[data-sheet-ready]:not([data-sheet-dragging]) #map .maplibregl-ctrl-top-right,
+  #app[data-sheet-ready]:not([data-sheet-dragging]) #map .maplibregl-ctrl-bottom-left,
+  #app[data-sheet-ready]:not([data-sheet-dragging]) #map .maplibregl-ctrl-bottom-right {
+    transition: bottom var(--dur-sheet) var(--ease-out);
+  }
+
+  #map .maplibregl-ctrl-top-right .maplibregl-ctrl {
+    margin: 0.6rem 0.75rem 0 0;
+  }
+
+  #map .maplibregl-ctrl-zoom-in,
+  #map .maplibregl-ctrl-zoom-out,
+  #app:not([data-map-rotated]) #map .maplibregl-ctrl-compass {
+    display: none;
+  }
+
+  #app:not([data-map-rotated]) #map .maplibregl-ctrl-group:has(.maplibregl-ctrl-compass) {
+    display: none;
+  }
+
+  #map .maplibregl-ctrl-group {
+    border-radius: 50%;
+  }
+
+  #map .maplibregl-ctrl-group button {
+    width: 2.75rem;
+    height: 2.75rem;
+  }
+
+  #map .maplibregl-ctrl-compass {
+    border-top: none;
+  }
+
+  /* The attribution starts expanded (as the map licences ask) and runs the
+     width of a phone; the scale waits until it has folded away. */
+  #map:has(.maplibregl-ctrl-attrib.maplibregl-compact-show) .maplibregl-ctrl-scale {
+    visibility: hidden;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #app[data-sheet-ready] #sheet,
+  #app[data-sheet-ready] #map .maplibregl-ctrl-top-right,
+  #app[data-sheet-ready] #map .maplibregl-ctrl-bottom-left,
+  #app[data-sheet-ready] #map .maplibregl-ctrl-bottom-right {
+    transition: none !important;
+  }
+
+  #location.is-nudged .location-icon {
+    animation: none;
+  }
+}
+
+.panel-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.species-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 0 0.5rem;
+  width: 100%;
+  padding: 0.55rem 0.4rem;
+  border: none;
+  border-top: 1px solid var(--border);
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.species-row:hover {
+  background: var(--bg);
+}
+
+.species-row:focus-visible {
+  background: var(--bg);
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.species-row__score {
+  grid-column: 1;
+  grid-row: 1 / 3;
+  align-self: center;
+  min-width: 2.1rem;
+  padding: 0.15rem 0.35rem;
+  border-radius: 6px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 0.95rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--surface); /* white on light, near-black on dark: always contrasts */
+  background: var(--score-low);
+}
+
+.species-row__score[data-band="good"] {
+  background: var(--score-good);
+}
+.species-row__score[data-band="ok"] {
+  background: var(--score-mid);
+}
+.species-row__score[data-band="low"] {
+  background: var(--score-low);
+}
+.species-row__score:not([data-band]) {
+  background: var(--muted); /* "–", no score yet */
+}
+
+.species-row__name {
+  grid-column: 2;
+  grid-row: 1;
+  font-weight: 600;
+}
+
+.species-row__sci {
+  grid-column: 2;
+  grid-row: 2;
+  color: var(--muted);
+  font-style: italic;
+  font-size: 0.85rem;
+}
+
+.species-row__count {
+  grid-column: 3;
+  grid-row: 1 / 3;
+  align-self: center;
+  color: var(--muted);
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+/* ==========================================================================
+   Species list (specieslist.ts): search, filter chips, toolbar (count, sort,
+   score info), rich rows with thumbnail / season / score ring, section
+   header, empty state. The plain .species-row rules above stay as they are:
+   the forest finder reuses them. Everything richer is scoped to
+   .species-row--rich or .sp-*. The rows flow in the container's own scroll.
+   ========================================================================== */
+.sp-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.sp-search {
+  position: relative;
+}
+
+.sp-search__icon {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  display: flex;
+  transform: translateY(-50%);
+  color: var(--muted);
+  pointer-events: none;
+}
+
+.panel-search {
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.5rem 0.5rem 0.5rem 2.4rem;
+  border: 1px solid var(--border);
+  border-radius: var(--sp-radius);
+  background: var(--bg);
+  color: var(--ink);
+  font: inherit;
+  font-size: max(1rem, 16px); /* below 16px iOS zooms the page on focus */
+  appearance: none;
+}
+
+.panel-search::placeholder {
+  color: var(--muted);
+  opacity: 1;
+}
+
+.panel-search:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  background: var(--surface);
+}
+
+/* The clear button, drawn in the theme's own colour instead of the browser's
+   blue: a cross cut out of a --muted square. */
+.panel-search::-webkit-search-cancel-button {
+  appearance: none;
+  width: 1.75rem;
+  height: 1.75rem;
+  margin: 0;
+  background: var(--muted);
+  cursor: pointer;
+  -webkit-mask: var(--sp-cross) center / 0.8rem no-repeat;
+  mask: var(--sp-cross) center / 0.8rem no-repeat;
+}
+
+/* --- filter chips: one row that scrolls sideways, fading out at the edges --- */
+.sp-chips {
+  display: flex;
+  gap: 0.4rem;
+  margin: 0 -1rem;
+  padding: 0.15rem 1rem;
+  overflow-x: auto;
+  scroll-padding-inline: 2.25rem;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    #000 1rem,
+    #000 calc(100% - 2rem),
+    transparent
+  );
+}
+
+.sp-chips::-webkit-scrollbar {
+  display: none;
+}
+
+.sp-chip {
+  position: relative;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 2.1rem;
+  padding: 0.2rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.87rem;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+/* 44px touch target without a 44px-tall pill */
+.sp-chip::after {
+  content: "";
+  position: absolute;
+  inset: -0.35rem -0.1rem;
+}
+
+.sp-chip:hover {
+  background: var(--bg);
+}
+
+.sp-chip:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.sp-chip__n {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.sp-chip__dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: var(--sp-season);
+}
+
+.sp-chip[aria-pressed="true"] {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--surface);
+  font-weight: 600;
+}
+
+.sp-chip[aria-pressed="true"] .sp-chip__n {
+  color: inherit;
+  opacity: 0.75;
+}
+
+/* --- toolbar: count and reset on the left, sort and score info on the right.
+   It wraps onto two lines when a narrow phone cannot fit both groups. --- */
+.sp-toolbar {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0 0.5rem;
+}
+
+.sp-toolbar__count {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.sp-toolbar__tools {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  margin-left: auto;
+}
+
+.sp-count {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.sp-count:focus {
+  outline: none; /* programmatic focus target only (tabindex -1) */
+}
+
+.sp-reset,
+.sp-explain__more,
+.panel-empty__reset {
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  padding: 0 0.3rem;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: var(--link);
+  font: inherit;
+  font-size: 0.87rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sp-reset[hidden] {
+  display: none;
+}
+
+.sp-reset:focus-visible,
+.sp-explain__more:focus-visible,
+.panel-empty__reset:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.sp-sort {
+  display: flex;
+  align-items: center;
+}
+
+.sp-sort__select {
+  max-width: 11.5rem;
+  min-height: 2.75rem;
+  padding: 0.15rem 1.6rem 0.15rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: var(--sp-radius);
+  background-color: var(--surface);
+  /* chevron drawn with gradients so it follows --muted in both themes */
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+    linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position:
+    calc(100% - 0.9rem) 55%,
+    calc(100% - 0.6rem) 55%;
+  background-size: 0.3rem 0.3rem;
+  background-repeat: no-repeat;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.87rem;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  appearance: none;
+  cursor: pointer;
+}
+
+.sp-sort__select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.sp-explain-toggle {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 2.75rem;
+  height: 2.75rem;
+  margin-right: -0.5rem;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: var(--link);
+  cursor: pointer;
+}
+
+.sp-explain-toggle[hidden] {
+  display: none;
+}
+
+.sp-explain-toggle:hover,
+.sp-explain-toggle[aria-expanded="true"] {
+  background: var(--bg);
+}
+
+.sp-explain-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+/* scores are being computed: a thin moving bar under the toolbar */
+.sp-progress {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -0.3rem;
+  height: 3px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: var(--border);
+}
+
+.sp-progress[hidden] {
+  display: none;
+}
+
+.sp-progress::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 40%;
+  border-radius: 3px;
+  background: var(--accent);
+  animation: sp-progress 1.1s ease-in-out infinite;
+}
+
+@keyframes sp-progress {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(250%);
+  }
+}
+
+/* --- below the toolbar: the pin hint, or the score explanation --- */
+.sp-status {
+  border-radius: var(--sp-radius);
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.sp-status[hidden] {
+  display: none;
+}
+
+.sp-status p {
+  margin: 0;
+  min-width: 0;
+}
+
+.sp-status[data-state="hint"] {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.55rem 0.7rem;
+  background: var(--bg);
+  background: color-mix(in srgb, var(--accent) 11%, var(--surface));
+  border: 1px solid var(--border);
+  border-color: color-mix(in srgb, var(--accent) 30%, var(--surface));
+}
+
+.sp-status__icon {
+  display: flex;
+  flex: 0 0 auto;
+  color: var(--accent);
+}
+
+.sp-status[data-state="explain"] {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.7rem 0.8rem 0.2rem;
+  background: var(--bg);
+}
+
+.sp-explain__title {
+  font-weight: 700;
+}
+
+.sp-explain__more {
+  align-self: flex-start;
+  padding-left: 0;
+}
+
+.sp-scale {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.sp-scale__bar {
+  flex: 1;
+  height: 0.45rem;
+  border-radius: 999px;
+  background: linear-gradient(to right, var(--score-low), var(--score-mid), var(--score-good));
+}
+
+/* --- colour key for the map dots while a filter is active --- */
+.sp-list .panel-legend {
+  flex-wrap: nowrap;
+  gap: 0.9rem;
+  margin: 0 -1rem;
+  padding: 0.1rem 1rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  white-space: nowrap;
+  mask-image: linear-gradient(to right, #000 calc(100% - 2rem), transparent);
+}
+
+.sp-list .panel-legend::-webkit-scrollbar {
+  display: none;
+}
+
+.sp-list .panel-legend li {
+  flex: 0 0 auto;
+}
+
+.sp-list .panel-legend::before {
+  content: "Fund på kortet";
+  flex: 0 0 auto;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.sp-list .panel-legend:empty {
+  display: none;
+}
+
+/* --- the rows --- */
+.sp-results {
+  min-width: 0;
+}
+
+.species-row--rich {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  min-height: 4rem;
+  padding: 0.45rem 0.35rem;
+}
+
+.panel-list > li:first-child > .species-row--rich {
+  border-top-color: transparent;
+}
+
+/* scored rows above, species that could not be scored at this pin below */
+.panel-list__divider {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.7rem 0.35rem 0.3rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.panel-list__divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.panel-list__divider:first-child {
+  padding-top: 0.3rem;
+}
+
+.panel-list__divider + li > .species-row--rich {
+  border-top-color: transparent;
+}
+
+.species-row__thumb {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: var(--sp-thumb);
+  height: var(--sp-thumb);
+  overflow: hidden;
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--border);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+
+.species-row__thumb img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.species-row__thumb img.is-loaded {
+  opacity: 1;
+}
+
+.species-row__text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.3;
+}
+
+/* A species name is never cut short: it wraps instead. */
+.species-row--rich .species-row__name {
+  font-size: 0.95rem;
+  overflow-wrap: anywhere;
+}
+
+.species-row--rich .species-row__sci {
+  overflow: hidden;
+  font-size: 0.82rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.species-row__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 0.45rem;
+  min-height: 1.15rem;
+  margin-top: 0.15rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.species-row__meta[data-season="in"],
+.species-row__meta[data-season="peak"] {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/* Season sparkline. Bars are solid --muted (or the season colour), both above
+   3:1 on the surface in either theme; "now" is a tinted column, an --ink bar
+   and a tick below the baseline. */
+.sp-spark {
+  flex: 0 0 auto;
+}
+
+.sp-spark rect {
+  fill: var(--muted);
+}
+
+[data-season="in"] .sp-spark rect,
+[data-season="peak"] .sp-spark rect {
+  fill: var(--sp-season);
+}
+
+.sp-spark .sp-spark__col.sp-spark__col {
+  fill: var(--ink);
+  opacity: 0.13;
+}
+
+.sp-spark rect.is-now.is-now,
+.sp-spark .sp-spark__tick.sp-spark__tick {
+  fill: var(--ink);
+}
+
+.species-row__rating {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+  width: 3.7rem;
+}
+
+.species-row__rating[hidden] {
+  display: none;
+}
+
+/* A small ring gauge: the arc is the score out of 100, so the number explains
+   itself, and the digits sit in --ink on the surface (AA in both themes). */
+.species-row--rich .species-row__score {
+  --ring: var(--score-low);
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 2.3rem;
+  min-width: 0;
+  height: 2.3rem;
+  padding: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--ink);
+  font-size: 0.92rem;
+}
+
+.species-row--rich .species-row__score::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(var(--ring) calc(var(--pct, 0) * 1%), var(--border) 0);
+  mask-image: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3.5px));
+}
+
+.species-row--rich .species-row__score[data-band="good"] {
+  --ring: var(--score-good);
+}
+.species-row--rich .species-row__score[data-band="ok"] {
+  --ring: var(--score-mid);
+}
+.species-row--rich .species-row__score[data-band="low"] {
+  --ring: var(--score-low);
+}
+
+.species-row--rich .species-row__score[data-state="loading"]::before {
+  animation: sp-pulse 1.1s ease-in-out infinite alternate;
+}
+
+.species-row__label {
+  color: var(--muted);
+  font-size: 0.7rem;
+  line-height: 1.15;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.species-row__rating[data-empty] {
+  width: auto;
+}
+
+.species-row__chevron {
+  display: flex;
+  flex: 0 0 auto;
+  color: var(--border);
+}
+
+.species-row--rich:hover .species-row__chevron,
+.species-row--rich:focus-visible .species-row__chevron {
+  color: var(--muted);
+}
+
+.sp-skeleton {
+  display: block;
+  width: 6.5rem;
+  height: 0.6rem;
+  border-radius: 999px;
+  background: var(--border);
+  animation: sp-pulse 1.1s ease-in-out infinite alternate;
+}
+
+@keyframes sp-pulse {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0.4;
+  }
+}
+
+/* --- "Flere arter": species whose score is not validated yet --- */
+.panel-group {
+  margin: 0.5rem 0 0.2rem;
+  padding: 0.6rem 0.7rem;
+  border-radius: var(--sp-radius);
+  background: var(--bg);
+}
+
+.panel-group__title {
+  display: flex;
+  align-items: baseline;
+  gap: 0.45rem;
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.panel-group__n {
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+
+.panel-group__note {
+  margin: 0.1rem 0 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+/* --- nothing matches --- */
+.panel-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 1.4rem 1rem 0.5rem;
+  text-align: center;
+  color: var(--muted);
+}
+
+.panel-empty__icon {
+  display: grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  margin-bottom: 0.4rem;
+  border-radius: 50%;
+  background: var(--bg);
+  color: var(--muted);
+}
+
+.panel-empty p {
+  margin: 0;
+}
+
+.panel-empty__title {
+  color: var(--ink);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.panel-empty__hint {
+  font-size: 0.85rem;
+}
+
+/* The list runs on below the fold: a fade pinned to the bottom edge of the
+   scrolling container says so, and lifts off once the end is reached. */
+.sp-more {
+  position: sticky;
+  bottom: calc(-1rem - env(safe-area-inset-bottom));
+  height: 1.5rem;
+  margin: -0.75rem -0.25rem 0;
+  background: linear-gradient(to bottom, transparent, var(--surface) 85%);
+  pointer-events: none;
+}
+
+/* Narrow phones: the row gives up its chevron before it gives up text. */
+@media (max-width: 379.98px) {
+  .species-row__chevron {
+    display: none;
+  }
+
+  .species-row--rich {
+    gap: 0.6rem;
+  }
+}
+
+/* Wide screens: the scrolling strips bleed less, the card has less padding. */
+@media (min-width: 720px) {
+  .sp-chips,
+  .sp-list .panel-legend {
+    margin: 0 -0.3rem;
+    padding-inline: 0.3rem;
+  }
+
+  .sp-chips {
+    mask-image: linear-gradient(
+      to right,
+      transparent 0,
+      #000 0.3rem,
+      #000 calc(100% - 2rem),
+      transparent
+    );
+  }
+}
+
+/* Wide screen with a mouse: the 44px touch sizes are not needed, so tighten
+   up. A touch tablet is wide too, but keeps the 44px controls. */
+@media (min-width: 720px) and (hover: hover) and (pointer: fine) {
+  .sp-sort__select,
+  .sp-explain-toggle {
+    min-height: 2.1rem;
+    height: 2.1rem;
+  }
+
+  .sp-explain-toggle {
+    width: 2.1rem;
+    margin-right: -0.2rem;
+  }
+
+  .sp-reset,
+  .sp-explain__more,
+  .panel-empty__reset {
+    min-height: 2.1rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sp-progress::after {
+    width: 100%;
+    animation: none;
+    opacity: 0.5;
+  }
+
+  .sp-skeleton,
+  .species-row--rich .species-row__score[data-state="loading"]::before {
+    animation: none;
+  }
+
+  .species-row__thumb img {
+    transition: none;
+  }
+}
+/* ===================== end species list ===================== */
+
+.panel-about,
+.panel-back {
+  margin-top: 0.7rem;
+  border: none;
+  background: none;
+  color: var(--link);
+  font-size: 0.9rem;
+  padding: 0.3rem 0;
+  cursor: pointer;
+}
+
+.panel-back {
+  margin: 0 0 0.4rem;
+}
+
+.detail-name {
+  margin: 0.2rem 0 0;
+  font-size: 1.25rem;
+}
+
+.detail-warning {
+  margin: 0 0 0.8rem;
+  padding: 0.6rem 0.7rem;
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+  border-left: 3px solid var(--accent);
+  border-radius: 0 6px 6px 0;
+  font-size: 0.85rem;
+}
+
+.detail-subtitle {
+  margin: 0 0 0.4rem;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.detail-warning p {
+  margin: 0 0 0.4rem;
+}
+
+.detail-warning p:last-child {
+  margin-bottom: 0;
+}
+
+/* =====================================================================
+   FORESTS, ONBOARDING AND ABOUT
+   The contents of #forest-finder (forestfinder.ts), the numbered forest
+   markers on the map (forestmarkers.ts), the score explainer
+   (scoreinfo.ts), the modal sheet (dialog.ts) used by the About screen
+   (about.ts), and the "?" map control. Styled with the shared tokens only.
+   ===================================================================== */
+
+.sk-icon {
+  flex: none;
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.text-link {
+  border: none;
+  background: none;
+  padding: 0.35rem 0;
+  color: var(--link);
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.text-link:hover {
+  text-decoration: underline;
+}
+
+.text-link:focus-visible,
+.about-call:focus-visible,
+.about-nav__link:focus-visible,
+.sk-dialog__close:focus-visible,
+.ff__close:focus-visible,
+.ff__cta:focus-visible,
+.ff-summary__help:focus-visible,
+.ff-here__go:focus-visible,
+.ff-here__shortcut:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* --- the 0-100 scale, drawn to proportion --- */
+.score-scale {
+  display: flex;
+  gap: 3px;
+  max-width: 22rem;
+  margin: 0.5rem 0 0;
+}
+
+.score-scale__part {
+  display: grid;
+  flex: 1 1 0;
+  gap: 0.1rem;
+  min-width: 0;
+  font-size: 0.75rem;
+  line-height: 1.25;
+}
+
+.score-scale__bar {
+  height: 0.5rem;
+  margin-bottom: 0.2rem;
+  border-radius: 3px;
+  background: var(--score-low);
+}
+
+.score-scale__part[data-band="ok"] .score-scale__bar {
+  background: var(--score-mid);
+}
+
+.score-scale__part[data-band="good"] .score-scale__bar {
+  background: var(--score-good);
+}
+
+.score-scale__label {
+  font-weight: 700;
+}
+
+.score-scale__range {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.score-explainer__text {
+  margin: 0.6rem 0 0;
+}
+
+/* --- forest finder: the contents of #forest-finder ---
+   One layout at every size, so it sits the same in a bottom sheet, a
+   floating card or a sidebar tab:
+     idle      title, lead, radius row, full-width button
+     otherwise one controls row (radius, "Søg herfra" when stale, close),
+               a status line, then the list. */
+.ff {
+  display: flex;
+  flex: 1 1 100%;
+  flex-direction: column;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.ff__head {
+  display: flex;
+  align-items: center;
+  min-height: 1.75rem;
+}
+
+.ff__title {
+  margin: 0;
+  font-size: 1.1rem;
+  line-height: 1.3;
+}
+
+.ff__lead {
+  margin: -0.35rem 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+/* Once a list is showing, the radius control is the heading ("Inden for 20
+   km"); the title stays for screen readers. */
+#forest-finder:not([data-state="idle"]) .ff__head {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+#forest-finder:not([data-state="idle"]) .ff__lead {
+  display: none;
+}
+
+.ff__controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ff__close {
+  display: grid;
+  flex: none;
+  order: 3;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  margin-left: auto;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.ff__close[hidden] {
+  display: none;
+}
+
+.ff__close:hover {
+  background: var(--bg);
+  color: var(--ink);
+}
+
+.ff__close svg,
+.ff__cta svg {
+  flex: none;
+  width: 1.25rem;
+  height: 1.25rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.ff__cta {
+  display: inline-flex;
+  flex: 1 1 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  order: 2;
+  min-height: 3rem;
+  padding: 0 1rem;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: var(--link);
+  color: var(--surface);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ff__cta:hover {
+  filter: brightness(1.08);
+}
+
+.ff__cta-label {
+  white-space: nowrap;
+}
+
+/* While a list (or its stand-in) is showing, changing the radius re-runs the
+   search by itself, so the big button steps aside unless the pin has moved. */
+#forest-finder:not([data-state="idle"]) .ff__cta:not([data-mode="again"]) {
+  display: none;
+}
+
+/* "Søg herfra" (the pin has moved off the searched spot): a quieter,
+   secondary action that shares the radius row, which drops its words to
+   make room. */
+.ff__cta[data-mode="again"] {
+  flex: 0 1 auto;
+  min-height: 2.75rem;
+  padding: 0 0.8rem;
+  border-color: var(--border);
+  background: var(--surface);
+  color: var(--link);
+}
+
+.ff__cta[data-mode="again"] svg,
+#forest-finder[data-stale="true"] .ff-radius__prefix,
+#forest-finder[data-stale="true"] .ff-radius__unit {
+  display: none;
+}
+
+.ff-radius {
+  display: inline-flex;
+  flex: 0 1 auto;
+  align-items: stretch;
+  order: 1;
+  min-width: 0;
+  margin: 0;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  font-size: 0.9rem;
+}
+
+#forest-finder[data-state="idle"] .ff-radius {
+  flex: 1 1 100%;
+}
+
+#forest-finder[data-state="idle"] .ff-radius label {
+  flex: 1;
+}
+
+.ff-radius__prefix,
+.ff-radius__unit {
+  align-self: center;
+  padding: 0 0.6rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.ff-radius label {
+  position: relative;
+  display: flex;
+  cursor: pointer;
+}
+
+.ff-radius input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+/* 44px in both directions: the options are thumb targets. */
+.ff-radius label span {
+  display: grid;
+  flex: 1;
+  place-items: center;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  padding: 0 0.3rem;
+  border-radius: 8px;
+  color: var(--muted);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.ff-radius label:hover span {
+  color: var(--ink);
+}
+
+.ff-radius input:checked + span {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow:
+    0 0 0 1px var(--border),
+    0 1px 3px rgb(0 0 0 / 0.14);
+}
+
+.ff-radius input:focus-visible + span {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.ff__status:empty {
+  display: none;
+}
+
+.ff-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.ff-summary__help {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 2.75rem;
+  margin: -0.5rem 0;
+  padding: 0 0.2rem;
+  border: none;
+  background: none;
+  color: var(--link);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ff-summary__help .sk-icon {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.ff-summary__help[aria-expanded="true"] {
+  text-decoration: underline;
+}
+
+.ff-explainer {
+  margin-bottom: 0.4rem;
+  padding: 0.75rem 0.85rem;
+  border-radius: 10px;
+  background: var(--bg);
+  font-size: 0.85rem;
+}
+
+.ff-explainer .score-scale {
+  margin-top: 0;
+}
+
+.ff-explainer__note {
+  margin: 0.4rem 0 0;
+  color: var(--muted);
+}
+
+.ff-hint,
+.ff-error {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.6rem 0.7rem;
+  align-items: start;
+  padding: 0.85rem;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+}
+
+.ff-hint__icon {
+  margin-top: 0.1rem;
+  color: var(--link);
+}
+
+.ff-hint__text {
+  display: grid;
+  gap: 0.15rem;
+  font-size: 0.9rem;
+}
+
+.ff-hint__action {
+  display: inline-flex;
+  grid-column: 2;
+  align-items: center;
+  gap: 0.45rem;
+  justify-self: start;
+  min-height: 2.75rem;
+  padding: 0 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ff-hint__action:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.ff-empty {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.85rem;
+  border-radius: 12px;
+  background: var(--bg);
+  font-size: 0.9rem;
+}
+
+.ff-empty span {
+  color: var(--muted);
+}
+
+#forest-results {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+  overscroll-behavior: contain;
+}
+
+#forest-results:empty {
+  display: none;
+}
+
+#forest-results:focus {
+  outline: none;
+}
+
+.forest-item + .forest-item {
+  border-top: 1px solid var(--border);
+}
+
+.forest-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0.7rem;
+  align-items: center;
+  width: 100%;
+  min-height: 3.5rem;
+  padding: 0.45rem 0.5rem;
+  border: none;
+  border-radius: 10px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.forest-row:hover,
+.forest-row.is-active {
+  background: var(--bg);
+}
+
+.forest-row:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+/* The same numbered disc as the marker on the map. */
+.forest-row__rank,
+.forest-marker__dot {
+  display: grid;
+  place-items: center;
+  width: 1.7rem;
+  height: 1.7rem;
+  border: 2px solid var(--surface);
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--surface);
+  font-size: 0.82rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.35);
+}
+
+.forest-row__text {
+  display: grid;
+  gap: 0.05rem;
+  min-width: 0;
+}
+
+.forest-row__name {
+  display: flex;
+  gap: 0.45rem;
+  align-items: center;
+  min-width: 0;
+  font-weight: 600;
+}
+
+.forest-row__name-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* "Din nål": on the row that is the forest the pin stands at. */
+.forest-row__here {
+  display: none;
+  flex: none;
+  gap: 0.2rem;
+  align-items: center;
+  padding: 0.05rem 0.45rem 0.05rem 0.3rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 16%, var(--surface));
+  color: var(--link);
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.forest-row__here .sk-icon {
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
+.forest-item.is-here .forest-row__here {
+  display: inline-flex;
+}
+
+.forest-row__meta {
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.3;
+}
+
+.forest-row__score {
+  min-width: 2.5rem;
+  padding: 0.3rem 0.4rem;
+  border-radius: 8px;
+  background: var(--score-low);
+  color: var(--surface);
+  font-size: 1rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.forest-row__score[data-band="ok"] {
+  background: var(--score-mid);
+}
+
+.forest-row__score[data-band="good"] {
+  background: var(--score-good);
+}
+
+.forest-item.is-selected .forest-row {
+  background: color-mix(in srgb, var(--accent) 13%, var(--surface));
+}
+
+.forest-item.is-selected .forest-row__rank,
+.forest-marker.is-selected .forest-marker__dot {
+  background: var(--link);
+}
+
+/* --- "Ved din nål": the forest the pin stands at (foresthere.ts) ---
+   A card, where the search results are plain rows: it is a place, not a
+   ranking. Idle, it leads the tab with a full-width action; once a list is
+   showing it folds to two lines and sticks to the top of the scrolling tab,
+   so it keeps one height as it follows the pin from forest to forest and the
+   way on to the species is always in view. */
+.ff-here {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.55rem;
+  padding: 0.75rem 0.85rem 0.85rem;
+  border: 1px solid color-mix(in srgb, var(--accent) 38%, var(--surface));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--accent) 9%, var(--surface));
+}
+
+.ff-here[hidden] {
+  display: none;
+}
+
+.ff-here__eyebrow {
+  display: flex;
+  gap: 0.3rem;
+  align-items: center;
+  margin: 0;
+  color: var(--link);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.ff-here__eyebrow .sk-icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.ff-here__main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.7rem;
+  align-items: center;
+}
+
+.ff-here__text {
+  display: grid;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+/* The name, and after it "en del af <skov>" for a named part: beside the
+   name where there is room, on a line of its own where there is not. */
+.ff-here__name {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 0.45em;
+  align-items: baseline;
+  margin: 0;
+  font-size: 1.15rem;
+  line-height: 1.25;
+}
+
+.ff-here__name-text,
+.ff-here__part {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* "en del af Rold Skov": after the name of a named part of a larger forest */
+.ff-here__part {
+  color: var(--muted);
+  font-size: 0.82em;
+  font-weight: 500;
+}
+
+/* looking for the forest at the pin (its outlines are on their way) */
+.ff-here[data-kind="pending"] {
+  border-color: var(--border);
+  background: var(--bg);
+}
+
+.ff-here[data-kind="pending"] .ff-here__eyebrow {
+  color: var(--muted);
+}
+
+.ff-here__pending {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.ff-here__pending-bar {
+  width: 55%;
+  height: 1.15rem;
+  border-radius: 6px;
+  background: linear-gradient(
+      100deg,
+      transparent 30%,
+      color-mix(in srgb, var(--surface) 70%, transparent) 50%,
+      transparent 70%
+    )
+    0 0 / 300% 100% var(--border);
+  animation: sk-shimmer 1.4s linear infinite;
+}
+
+/* The line under the name wraps (to two lines on a narrow phone). */
+.ff-here__meta {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+  line-height: 1.35;
+}
+
+/* its short form: only in the folded card on a phone, see below */
+.ff-here__meta-short {
+  display: none;
+}
+
+.ff-here__score {
+  min-width: 2.75rem;
+  font-size: 1.15rem;
+}
+
+.ff-here__score[hidden] {
+  display: none;
+}
+
+/* the score on its way: the pill's shape, no number yet */
+.ff-here__score.is-loading {
+  height: 2rem;
+  background: linear-gradient(
+      100deg,
+      transparent 30%,
+      color-mix(in srgb, var(--surface) 70%, transparent) 50%,
+      transparent 70%
+    )
+    0 0 / 300% 100% var(--border);
+  animation: sk-shimmer 1.4s linear infinite;
+}
+
+.ff-here__go {
+  display: inline-flex;
+  gap: 0.3rem;
+  align-items: center;
+  justify-content: center;
+  min-height: 3rem;
+  padding: 0 1rem;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: var(--link);
+  color: var(--surface);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ff-here__go:hover {
+  filter: brightness(1.08);
+}
+
+.ff-here__go .sk-icon {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+/* no named forest by the pin: a line, and the nearest one as a shortcut */
+.ff-here[data-kind="nowhere"] {
+  border-color: var(--border);
+  background: var(--bg);
+}
+
+.ff-here[data-kind="nowhere"] .ff-here__eyebrow {
+  color: var(--muted);
+}
+
+.ff-here__none {
+  margin: 0;
+  font-size: 0.92rem;
+}
+
+.ff-here__shortcut {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.5rem;
+  align-items: center;
+  min-height: 3rem;
+  padding: 0.4rem 0.6rem 0.4rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ff-here__shortcut:hover {
+  border-color: var(--muted);
+}
+
+.ff-here__shortcut-text {
+  display: grid;
+  min-width: 0;
+  line-height: 1.3;
+}
+
+.ff-here__shortcut-text strong,
+.ff-here__shortcut-text span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ff-here__shortcut-text strong {
+  color: var(--link);
+}
+
+.ff-here__shortcut-text span {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.ff-here__shortcut .sk-icon {
+  color: var(--muted);
+}
+
+/* With the pin's forest leading the tab, searching for others is the second
+   step: the search button steps down to an outline. */
+#forest-finder[data-here="forest"][data-state="idle"] .ff__cta {
+  border-color: var(--border);
+  background: var(--surface);
+  color: var(--link);
+}
+
+/* Once a list (or its stand-in) is showing: two lines, stuck to the top. */
+#forest-finder:not([data-state="idle"]) .ff-here[data-kind="forest"] {
+  position: sticky;
+  z-index: 1;
+  top: 0;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.15rem 0.6rem;
+  align-items: center;
+  padding: 0.35rem 0.5rem 0.6rem 0.85rem;
+  box-shadow: 0 6px 10px -8px rgb(0 0 0 / 0.35);
+}
+
+/* The scrolling tab has padding above its content: cover it, so rows do not
+   show through between the tab's top edge and the stuck card. */
+#forest-finder:not([data-state="idle"]) .ff-here[data-kind="forest"]::before {
+  position: absolute;
+  right: -1px;
+  bottom: 100%;
+  left: -1px;
+  height: 1.25rem;
+  background: var(--surface);
+  content: "";
+}
+
+#forest-finder:not([data-state="idle"]) .ff-here[data-kind="forest"] .ff-here__main {
+  grid-row: 2;
+  grid-column: 1 / -1;
+}
+
+#forest-finder:not([data-state="idle"]) .ff-here__go {
+  grid-row: 1;
+  grid-column: 2;
+  min-height: 2.75rem;
+  padding: 0 0.4rem 0 0.7rem;
+  background: none;
+  color: var(--link);
+}
+
+#forest-finder:not([data-state="idle"]) .ff-here__go:hover {
+  filter: none;
+  text-decoration: underline;
+}
+
+/* Folded, the card keeps one height whatever forest the pin moves to (or
+   the list under it would jump): one line for the name -- "en del af …" shows
+   beside it when it fits and is left out when it does not -- and one line
+   under it. */
+#forest-finder:not([data-state="idle"]) .ff-here__name {
+  max-height: 1.25em;
+  overflow: hidden;
+  font-size: 1.05rem;
+}
+
+#forest-finder:not([data-state="idle"]) .ff-here__meta {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ...and on a phone that one line is the short form, which fits */
+@media (max-width: 719.98px) {
+  #forest-finder:not([data-state="idle"]) .ff-here__meta-long {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  #forest-finder:not([data-state="idle"]) .ff-here__meta-short {
+    display: inline;
+  }
+}
+
+/* A short phone leaves the tab only a couple of hundred pixels: there the
+   stuck card is one line (name, number, action), so the list keeps its room. */
+@media (max-width: 719.98px) and (max-height: 700px) {
+  #forest-finder:not([data-state="idle"]) .ff-here[data-kind="forest"] {
+    padding: 0.2rem 0.3rem 0.2rem 0.85rem;
+  }
+
+  #forest-finder:not([data-state="idle"]) .ff-here[data-kind="forest"] .ff-here__eyebrow,
+  #forest-finder:not([data-state="idle"]) .ff-here[data-kind="forest"] .ff-here__meta {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  #forest-finder:not([data-state="idle"]) .ff-here[data-kind="forest"] .ff-here__main {
+    grid-row: 1;
+    grid-column: 1;
+  }
+
+  #forest-finder:not([data-state="idle"]) .ff-here__go {
+    padding-left: 0.3rem;
+  }
+
+  /* a long name comes before the action's words: the arrow alone is left
+     (foresthere.ts marks the card when the name would otherwise be cut) */
+  #forest-finder:not([data-state="idle"]) .ff-here.is-tight .ff-here__go-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  #forest-finder:not([data-state="idle"]) .ff-here.is-tight .ff-here__go {
+    min-width: 2.75rem;
+    padding: 0;
+  }
+}
+
+/* no pin: the "Sæt først en nål" card says what is needed */
+#forest-finder[data-state="needs-pin"] .ff-here {
+  display: none;
+}
+
+/* while a list is showing, "no forest here" is a single quiet line */
+#forest-finder:not([data-state="idle"]) .ff-here[data-kind="nowhere"] {
+  padding: 0.5rem 0.85rem;
+}
+
+#forest-finder:not([data-state="idle"]) .ff-here__shortcut {
+  display: none;
+}
+
+.forest-skeleton {
+  display: flex;
+  gap: 0.7rem;
+  align-items: center;
+  min-height: 3.5rem;
+  padding: 0.45rem 0.5rem;
+}
+
+.forest-skeleton + .forest-skeleton {
+  border-top: 1px solid var(--border);
+}
+
+.forest-skeleton__dot,
+.forest-skeleton__lines {
+  background: linear-gradient(
+      100deg,
+      transparent 30%,
+      color-mix(in srgb, var(--surface) 70%, transparent) 50%,
+      transparent 70%
+    )
+    0 0 / 300% 100% var(--border);
+  animation: sk-shimmer 1.4s linear infinite;
+}
+
+.forest-skeleton__dot {
+  flex: none;
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 50%;
+}
+
+.forest-skeleton__lines {
+  flex: 1;
+  height: 2.2rem;
+  border-radius: 8px;
+}
+
+.forest-skeleton:nth-child(2) .forest-skeleton__lines {
+  margin-right: 18%;
+}
+
+.forest-skeleton:nth-child(4) .forest-skeleton__lines {
+  margin-right: 30%;
+}
+
+@keyframes sk-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -50% 0;
+  }
+}
+
+@media (max-width: 719.98px) {
+  #forest-finder:not([data-state="idle"]) .ff-radius__prefix {
+    display: none;
+  }
+}
+
+/* Pointer devices: slightly denser rows and controls. */
+@media (min-width: 720px) {
+  .ff__cta {
+    min-height: 2.75rem;
+  }
+
+  .ff__close {
+    width: 2.25rem;
+    height: 2.25rem;
+  }
+
+  .ff-radius label span {
+    min-width: 2.4rem;
+    min-height: 2.1rem;
+  }
+
+  .ff__cta[data-mode="again"] {
+    min-height: 2.35rem;
+  }
+
+  .ff-summary__help {
+    min-height: 2rem;
+  }
+
+  .forest-row {
+    min-height: 3.25rem;
+    padding-block: 0.35rem;
+  }
+}
+
+/* --- numbered forest markers on the map --- */
+.forest-marker {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+/* A leader from a marker that was nudged aside back to its true spot. */
+.forest-marker__stem {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: none;
+  width: var(--stem-length, 0);
+  height: 2px;
+  background: var(--ink);
+  box-shadow: 0 0 0 1px var(--surface);
+  transform: rotate(var(--stem-angle, 0rad));
+  transform-origin: 0 50%;
+  pointer-events: none;
+}
+
+.forest-marker[data-moved="true"] .forest-marker__stem {
+  display: block;
+}
+
+.forest-marker__dot {
+  position: relative;
+  transition: transform 0.15s ease;
+}
+
+/* 1 is enough to lift it over its neighbours, and stays under the panels
+   and controls that float over the map. */
+.forest-marker.is-active,
+.forest-marker.is-selected,
+.forest-marker:hover {
+  z-index: 1;
+}
+
+.forest-marker.is-active .forest-marker__dot,
+.forest-marker:hover .forest-marker__dot {
+  transform: scale(1.3);
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--accent) 55%, transparent),
+    0 1px 4px rgb(0 0 0 / 0.35);
+}
+
+.forest-marker.is-selected .forest-marker__dot {
+  transform: scale(1.15);
+}
+
+.forest-marker__tag {
+  position: absolute;
+  top: calc(50% + 1rem);
+  left: 50%;
+  display: none;
+  max-width: 12rem;
+  padding: 0.15rem 0.5rem;
+  overflow: hidden;
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--ink);
+  font:
+    600 0.78rem/1.4 system-ui,
+    -apple-system,
+    "Segoe UI",
+    sans-serif;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  box-shadow: 0 1px 6px rgb(0 0 0 / 0.3);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+/* Near a side edge of the map the tag hangs inwards instead of being cut. */
+.forest-marker[data-edge="left"] .forest-marker__tag {
+  left: 0.2rem;
+  transform: none;
+}
+
+.forest-marker[data-edge="right"] .forest-marker__tag {
+  right: 0.2rem;
+  left: auto;
+  transform: none;
+}
+
+/* The tag sits on whichever side forestmarkers.ts found free of neighbours. */
+.forest-marker[data-tag="above"] .forest-marker__tag {
+  top: auto;
+  bottom: calc(50% + 1rem);
+}
+
+.forest-marker[data-tag="right"] .forest-marker__tag {
+  top: 50%;
+  right: auto;
+  left: calc(50% + 1.15rem);
+  transform: translateY(-50%);
+}
+
+.forest-marker[data-tag="left"] .forest-marker__tag {
+  top: 50%;
+  right: calc(50% + 1.15rem);
+  left: auto;
+  transform: translateY(-50%);
+}
+
+.forest-marker.is-active .forest-marker__tag,
+.forest-marker.is-selected .forest-marker__tag,
+.forest-marker:hover .forest-marker__tag {
+  display: block;
+}
+
+@media (max-width: 719.98px), (pointer: coarse) {
+  .forest-marker {
+    width: 2.75rem;
+    height: 2.75rem;
+  }
+}
+
+.forest-origin {
+  width: 0.9rem;
+  height: 0.9rem;
+  border: 3px solid var(--ink);
+  border-radius: 50%;
+  background: var(--surface);
+  box-shadow: 0 0 0 2px var(--surface);
+  opacity: 0.9;
+}
+
+/* --- "?" in the map's control stack (MapLibre's controls are not themed, so
+   the colours here are fixed like theirs) --- */
+.maplibregl-ctrl-group .sk-help-ctrl__button {
+  display: grid;
+  place-items: center;
+  color: #333;
+}
+
+@media (max-width: 719.98px) {
+  .maplibregl-ctrl-group .sk-help-ctrl__button {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+/* --- modal sheet (About) --- */
+.sk-dialog {
+  position: fixed;
+  inset: 0;
+  width: min(34rem, calc(100vw - 2rem));
+  max-width: none;
+  height: fit-content;
+  max-height: min(48rem, calc(100dvh - 2rem));
+  margin: auto;
+  padding: 0;
+  overflow: hidden;
+  border: none;
+  border-radius: 16px;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 24px 60px rgb(0 0 0 / 0.35);
+}
+
+.sk-dialog[open] {
+  display: flex;
+  flex-direction: column;
+  animation: sk-rise 0.22s ease-out;
+}
+
+.sk-dialog::backdrop {
+  background: rgb(18 20 14 / 0.5);
+}
+
+.sk-dialog.about {
+  width: min(44rem, calc(100vw - 2rem));
+}
+
+@keyframes sk-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+
+.sk-dialog__header {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 0.75rem 0.5rem 1.25rem;
+}
+
+.sk-dialog__title {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0;
+  font-size: 1.25rem;
+  line-height: 1.25;
+}
+
+.sk-brand {
+  width: 1.6rem;
+  height: 1.6rem;
+  color: var(--link);
+}
+
+.sk-dialog__close {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.sk-dialog__close:hover {
+  background: var(--bg);
+  color: var(--ink);
+}
+
+.sk-dialog__toolbar,
+.sk-dialog__footer {
+  flex: none;
+}
+
+.sk-dialog__toolbar:empty,
+.sk-dialog__footer:empty {
+  display: none;
+}
+
+.sk-dialog__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 0 1.25rem 1.25rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.sk-dialog__body:focus {
+  outline: none;
+}
+
+.sk-dialog__footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.85rem 1.25rem calc(0.6rem + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--border);
+}
+
+@media (max-width: 719.98px) {
+  /* a sheet rising from the bottom edge, within thumb reach */
+  .sk-dialog,
+  .sk-dialog.about {
+    width: 100vw;
+    max-height: calc(100dvh - 1.25rem - env(safe-area-inset-top));
+    margin: auto 0 0;
+    border-radius: 18px 18px 0 0;
+  }
+}
+
+/* --- the how-to steps in About --- */
+
+.steps {
+  display: grid;
+  gap: 0.85rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.steps__item {
+  display: flex;
+  gap: 0.8rem;
+  align-items: flex-start;
+}
+
+.steps__icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent) 15%, var(--surface));
+  color: var(--link);
+}
+
+.steps__text {
+  display: grid;
+  flex: 1;
+  gap: 0.05rem;
+  min-width: 0;
+}
+
+.steps__number {
+  color: var(--link);
+}
+
+.steps__desc {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.steps .score-scale {
+  margin-top: 0.45rem;
+}
+
+/* --- About --- */
+.about-nav {
+  display: flex;
+  gap: 0.4rem;
+  padding: 0.15rem 1.25rem 0.7rem;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--border);
+  scrollbar-width: none;
+}
+
+.about-nav__link {
+  flex: none;
+  min-height: 2.25rem;
+  padding: 0 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.about-nav__link:hover {
+  border-color: var(--muted);
+}
+
+.about-intro {
+  margin: 1.1rem 0 0.9rem;
+  font-size: 1.05rem;
+  line-height: 1.5;
+}
+
+.about-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.about-stat {
+  display: flex;
+  flex-direction: column-reverse; /* the figure reads first, its label under it */
+  padding: 0.7rem 0.85rem;
+  border-radius: 12px;
+  background: var(--bg);
+}
+
+.about-stat__value {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.3;
+}
+
+.about-stat__label {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.about-section {
+  margin: 1.7rem 0 0;
+  font-size: 0.93rem;
+  scroll-margin-top: 0.75rem;
+}
+
+.about-section__title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0.5rem;
+  font-size: 1.08rem;
+  line-height: 1.3;
+}
+
+.about-section__title .sk-icon {
+  color: var(--link);
+}
+
+.about-section p {
+  margin: 0.5rem 0 0;
+}
+
+.about-safety {
+  margin-top: 1.1rem;
+  padding: 1rem 1.1rem 1.1rem;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--surface));
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+}
+
+.about-safety__lead {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.about-call {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.8rem;
+  min-height: 3.25rem;
+  margin-top: 0.9rem;
+  padding: 0.5rem 1.2rem 0.5rem 1rem;
+  border-radius: 12px;
+  background: var(--link);
+  color: var(--surface);
+  text-decoration: none;
+}
+
+.about-call:hover {
+  filter: brightness(1.08);
+}
+
+.about-call .sk-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.about-call__text {
+  display: grid;
+  line-height: 1.25;
+}
+
+.about-call__label {
+  font-size: 0.8rem;
+}
+
+.about-call__number {
+  font-size: 1.3rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+.about-section .steps {
+  margin-top: 0.8rem;
+}
+
+.about-section .text-link {
+  margin-top: 0.6rem;
+}
+
+.about-terms {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 0.5rem;
+  margin: 0.6rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.about-term {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.2rem 0.5rem;
+  align-content: start;
+  padding: 0.75rem 0.85rem;
+  border-radius: 12px;
+  background: var(--bg);
+}
+
+.about-term .sk-icon {
+  color: var(--link);
+}
+
+.about-term span {
+  grid-column: 1 / -1;
+  color: var(--muted);
+  font-size: 0.87rem;
+}
+
+.about-isnot {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 0.7rem 1.2rem;
+  margin-top: 0.9rem;
+}
+
+.about-section .about-isnot__item {
+  margin: 0;
+  padding-left: 0.8rem;
+  border-left: 3px solid var(--score-good);
+}
+
+.about-section .about-isnot__item--not {
+  border-left-color: var(--score-low);
+}
+
+.about-isnot__item strong {
+  display: block;
+}
+
+.about-sources {
+  margin: 0;
+}
+
+.about-sources__row {
+  display: grid;
+  grid-template-columns: 5.5rem 1fr;
+  gap: 0.75rem;
+  padding: 0.55rem 0;
+  border-top: 1px solid var(--border);
+}
+
+.about-sources__row:first-child {
+  border-top: none;
+}
+
+.about-sources dt {
+  font-weight: 700;
+}
+
+.about-sources dd {
+  margin: 0;
+}
+
+.about-version {
+  margin: 1.4rem 0 0;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+@media (max-width: 719.98px) {
+  .about-nav__link {
+    min-height: 2.75rem;
+  }
+
+  .about-call {
+    display: flex;
+    justify-content: center;
+  }
+
+  .sk-dialog__body {
+    padding-bottom: calc(1.25rem + env(safe-area-inset-bottom));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sk-dialog[open],
+  .forest-skeleton__dot,
+  .ff-here__score.is-loading,
+  .ff-here__pending-bar,
+  .forest-skeleton__lines {
+    animation: none;
+  }
+
+  .forest-marker__dot {
+    transition: none;
+  }
+}

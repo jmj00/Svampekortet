@@ -1,0 +1,27 @@
+{
+  "status": "ok",
+  "beskrivelse": "",
+  "fund": [
+    {
+      "type": "husnummer",
+      "id": "0a3f507a-ec01-32b8-e044-0003ba298018",
+      "titel": "Rådhuspladsen 1, 1550 København V",
+      "vejnavn": "Rådhuspladsen",
+      "husnummer": "1"
+    },
+    {
+      "type": "husnummer",
+      "id": "0a3f507f-0959-32b8-e044-0003ba298018",
+      "titel": "Rådhuspladsen 1, 3300 Frederiksværk",
+      "vejnavn": "Rådhuspladsen",
+      "husnummer": "1"
+    },
+    {
+      "type": "husnummer",
+      "id": "0a3f5084-62c3-32b8-e044-0003ba298018",
+      "titel": "Rådhuspladsen 1, 4200 Slagelse",
+      "vejnavn": "Rådhuspladsen",
+      "husnummer": "1"
+    }
+  ]
+}

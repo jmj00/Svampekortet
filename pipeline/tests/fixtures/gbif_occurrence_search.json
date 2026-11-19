@@ -1,0 +1,25 @@
+{
+  "offset": 0,
+  "limit": 0,
+  "endOfRecords": false,
+  "count": 4637,
+  "facets": [
+    {
+      "field": "YEAR",
+      "counts": [
+        {
+          "name": "2011",
+          "count": 439
+        },
+        {
+          "name": "2012",
+          "count": 351
+        },
+        {
+          "name": "2010",
+          "count": 327
+        }
+      ]
+    }
+  ]
+}

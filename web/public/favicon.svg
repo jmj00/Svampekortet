@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Svampekortet">
+  <rect width="64" height="64" rx="14" fill="#f4f3ee" />
+  <path d="M26 33h12v17a6 6 0 0 1-12 0z" fill="#e7dfc9" />
+  <path d="M10 33c0-15 11-24 22-24s22 9 22 24c0 3-6 5-22 5s-22-2-22-5z" fill="#b26b18" />
+  <path d="M16 34c6-3 26-3 32 0" fill="none" stroke="#8f5310" stroke-width="2" stroke-linecap="round" opacity="0.55" />
+</svg>

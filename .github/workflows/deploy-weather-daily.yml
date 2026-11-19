@@ -1,0 +1,121 @@
+name: deploy-weather-daily
+
+# Refreshes just the weather-driven "current conditions" data daily, early
+# Danish morning -- the one part of the score that's actually time-sensitive
+# day to day. Habitat and seasonality come from historical finds / a fixed
+# per-species curve, neither of which needs refreshing more than weekly, so
+# this workflow deliberately skips everything deploy.yml does *except*
+# weather: no Svampeatlas/red-list re-ingest, no forests/biotope/host-tree
+# refresh, no backtest gate (the slow part of a normal deploy). It reuses the
+# same cached DuckDB deploy.yml maintains, just topping up this year's
+# weather before re-publishing and redeploying to the same production site.
+#
+# Cron is UTC and can't track Danish DST, so the local time this actually
+# runs at drifts by an hour across the year: 03:00 UTC is 4am in Denmark
+# during winter (CET, UTC+1) and 5am during summer (CEST, UTC+2). Either way
+# it's comfortably before typical morning use -- ask if you'd rather flip
+# the trade-off to land exactly on 4am in summer instead.
+#
+# Golden-location checks still run (cheap, a real sanity gate); the backtest
+# does not (the slow part, and not sensitive to one more day of weather) --
+# a bad run fails loudly here rather than silently shipping.
+
+on:
+  workflow_dispatch: {}
+  schedule:
+    - cron: "0 3 * * *" # 4am CET / 5am CEST -- see note above
+
+concurrency:
+  group: deploy-weather-daily
+  cancel-in-progress: false
+
+jobs:
+  refresh-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e .
+
+      - name: Restore the weather database
+        uses: actions/cache/restore@v4
+        with:
+          path: build/svampekortet.duckdb
+          key: duckdb-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: duckdb-
+
+      - name: Top up this year's weather
+        run: |
+          year=$(date -u +%Y)
+          python -m pipeline.ingest.dmi --from-year "$year" --to-year "$year" \
+            --db build/svampekortet.duckdb
+
+      - name: Re-fit models and current conditions (no backtest)
+        run: |
+          python -m pipeline.model.fit --db build/svampekortet.duckdb --out build/publish \
+            --skip-backtest --report build/daily_fit_report.json
+
+      - name: Check golden-location sanity gate
+        run: |
+          python -c "
+          import json, sys
+          report = json.load(open('build/daily_fit_report.json'))
+          failures = report.get('golden_failures', [])
+          if failures:
+              print('GOLDEN CHECK FAILED:', failures)
+              sys.exit(1)
+          print('golden checks passed')
+          "
+
+      - name: Publish the species payload
+        run: python -m pipeline.publish.site --db build/svampekortet.duckdb --out build/publish
+
+      - name: Save the weather database
+        if: always() && hashFiles('build/svampekortet.duckdb') != ''
+        uses: actions/cache/save@v4
+        with:
+          path: build/svampekortet.duckdb
+          key: duckdb-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Stage the payload for the web build
+        run: |
+          rm -rf web/public/data
+          cp -r build/publish web/public/data
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+        working-directory: web
+      - run: npm run build
+        working-directory: web
+        env:
+          VITE_DATAFORDELER_API_KEY: ${{ secrets.VITE_DATAFORDELER_API_KEY }}
+          VITE_SENTRY_DSN: ${{ vars.VITE_SENTRY_DSN }}
+          VITE_RELEASE: ${{ github.sha }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
+
+      - name: Deploy to Cloudflare Pages
+        # Direct wrangler call (not cloudflare/wrangler-action) with its own
+        # retry loop -- see deploy.yml's identical step for why.
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          for attempt in 1 2 3; do
+            if npx wrangler@3 pages deploy web/dist --project-name=svampekortet --branch=main; then
+              exit 0
+            fi
+            echo "deploy attempt $attempt failed"
+            [ "$attempt" -lt 3 ] && sleep $((attempt * 15))
+          done
+          echo "deploy failed after 3 attempts"
+          exit 1
