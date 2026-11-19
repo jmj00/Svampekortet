@@ -193,9 +193,12 @@ export async function createMap(
     attributionControl: { compact: true },
   });
 
+  // One position per press, not a follow mode: following kept a GPS watch
+  // running that put the pin back on the user after they had tapped elsewhere
+  // (locate.ts). Each press now asks once, flies there once and sets the pin.
   const geolocate = new maplibregl.GeolocateControl({
     positionOptions: { enableHighAccuracy: true },
-    trackUserLocation: true,
+    trackUserLocation: false,
   });
 
   map.addControl(new maplibregl.NavigationControl(), "top-right");

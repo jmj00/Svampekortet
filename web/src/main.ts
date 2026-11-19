@@ -9,6 +9,7 @@ import { initForestFinder } from "./forestfinder";
 import { ForestOutlines } from "./forestoutlines";
 import { createForestScores } from "./forestscores";
 import { forestAtPin, pinForest } from "./forests";
+import { createLocateGate } from "./locate";
 import { createMap, type MapBundle } from "./map";
 import { initNavigation, type Navigation, type Snapshot } from "./nav";
 import { loadModelBundle, type ModelBundle } from "./model";
@@ -54,11 +55,9 @@ const mapReady: Promise<MapBundle> = createMap(
 /** Where a pin came from: decides what the camera still has to do. */
 type PinSource = "map" | "locate" | "address";
 
-// `trackUserLocation: true` keeps re-firing "geolocate" on every GPS update, so
-// without this a manually-placed pin gets overwritten by the next fix. Stop the
-// watch (same as clicking the control's button again) whenever the user asserts
-// a different spot themselves, and track its on/off state to know when to.
-let geolocateActive = false;
+// "My location" answers once per request (map.ts, locate.ts): the answer sets
+// the pin unless the user has chosen a spot of their own since asking.
+const locateGate = createLocateGate();
 
 mapReady
   .then(({ map, geolocate, loaded }) => {
@@ -91,28 +90,24 @@ mapReady
       aboutControl(() => showAbout()),
       "top-right",
     );
-    geolocate.on("trackuserlocationstart", () => {
-      geolocateActive = true;
-    });
-    geolocate.on("trackuserlocationend", () => {
-      geolocateActive = false;
-    });
-    // A refusal switches the control off without a "trackuserlocationend".
-    geolocate.on("error", (e) => {
-      if ((e as unknown as GeolocationPositionError).code === 1) geolocateActive = false;
-    });
+    // The control's own button asks too (before its own click handler runs).
+    map
+      .getContainer()
+      .querySelector(".maplibregl-ctrl-geolocate")
+      ?.addEventListener("click", () => locateGate.asked(), { capture: true });
     map.on("moveend", () => prefetchOutlines(map));
     map.on("click", (e) => {
       // The start screen's species step asks for a species, not a place.
       if (start.ignoresMapClicks()) return;
-      if (geolocateActive) geolocate.trigger(); // user picked a spot themselves; stop following
+      locateGate.superseded(); // the user picked a spot themselves
       const { lng, lat } = e.lngLat;
       setPin([lng, lat]); // named after the nearest forest, see describePin
       // no camera animation here, so the forest finder need not wait
       afterPin("map", [lng, lat]);
     });
-    // "Near me": the geolocate control's fix drops the pin too
+    // "Near me": the answer to a request drops the pin too, once
     geolocate.on("geolocate", (e) => {
+      if (!locateGate.accept()) return;
       const { longitude, latitude } = (e as GeolocationPosition).coords;
       setPin([longitude, latitude], MY_LOCATION_LABEL);
       afterPin("locate", [longitude, latitude]);
@@ -414,8 +409,8 @@ function clearPin(): void {
   pinLabel = null;
   writeStoredPin(null);
   panel?.setPin(null);
-  void mapReady.then(({ geolocate }) => {
-    if (geolocateActive) geolocate.trigger(); // or the next GPS fix puts it straight back
+  locateGate.superseded(); // a position still on its way does not bring it back
+  void mapReady.then(() => {
     marker?.remove();
     marker = null;
   });
@@ -538,7 +533,8 @@ for (const button of tabButtons) {
 // numbered forest markers on the map) ---
 function triggerGeolocate(): void {
   void mapReady.then(({ geolocate }) => {
-    if (!geolocateActive) geolocate.trigger();
+    locateGate.asked();
+    geolocate.trigger();
   });
 }
 
@@ -560,7 +556,7 @@ function locate(): Promise<LocateResult> {
           done((e as GeolocationPositionError).code === 1 ? "denied" : "unavailable");
         geolocate.on("geolocate", onFix);
         geolocate.on("error", onError);
-        if (geolocateActive) geolocate.trigger(); // already following: start afresh
+        locateGate.asked();
         if (!geolocate.trigger()) done("unavailable");
       }),
     () => "unavailable",
@@ -568,12 +564,7 @@ function locate(): Promise<LocateResult> {
 }
 
 function cancelLocate(): void {
-  void mapReady.then(
-    ({ geolocate }) => {
-      if (geolocateActive) geolocate.trigger();
-    },
-    () => {},
-  );
+  locateGate.superseded(); // an answer still on its way sets no pin
 }
 
 function showAbout(section?: AboutSection): void {
@@ -612,9 +603,7 @@ const forestFinder = initForestFinder({
     };
   },
   goToForest: (forest, camera) => {
-    void mapReady.then(({ geolocate }) => {
-      if (geolocateActive) geolocate.trigger(); // user picked a spot themselves; stop following
-    });
+    locateGate.superseded(); // the user picked a spot themselves
     const target: [number, number] = [forest.lon, forest.lat];
     setPin(target, forest.name); // pin appears right away; the camera catches up
     sheet.atMost("half"); // a fully open phone sheet would hide the forest just chosen
@@ -654,9 +643,7 @@ const ADDRESS_ZOOM = 14;
 const FOREST_ZOOM = 12.5;
 
 function choosePlace(target: [number, number], text: string, zoom = ADDRESS_ZOOM): void {
-  void mapReady.then(({ geolocate }) => {
-    if (geolocateActive) geolocate.trigger(); // user picked a place; stop following location
-  });
+  locateGate.superseded(); // the user picked a place
   setPin(target, text);
   afterPin("address", target, zoom);
 }
