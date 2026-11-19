@@ -55,7 +55,7 @@ from pipeline.model.host_tree import (
     HostTreeGrid,
     HostTreeModel,
 )
-from pipeline.model.metrics import calibration_curve, precision_at_k, roc_auc
+from pipeline.model.metrics import auc_gap_se, calibration_curve, precision_at_k, roc_auc
 from pipeline.model.recording_effort import EffortGrid
 from pipeline.model.seasonality import SeasonalityModel
 from pipeline.model.species_model import SpeciesModel
@@ -70,7 +70,11 @@ from pipeline.species import published_species
 
 TRAIN_MAX_YEAR = 2021
 TEST_YEARS = (2022, 2023, 2024, 2025)
-NEGATIVES_PER_POSITIVE = 5
+# 5 -> 20 (2026-11-19): at 5 the negative draw alone moved a species'
+# week_matched gap by ~0.01-0.02, so species within that of the tolerance
+# passed or failed by luck. The gap's bootstrap SE is in the report.
+NEGATIVES_PER_POSITIVE = 20
+GAP_SE_RESAMPLES = 200
 DATE_JITTER_DAYS = 3  # week_matched negatives sit within this of a positive's day
 MIN_TEST_POSITIVES = 25  # below this the gate is skipped for that species
 SEED = 20260902
@@ -298,6 +302,10 @@ def _evaluate(
         "auc_baseline": _r(roc_auc(raw_base, labels)),
         "precision_at_k_full": _r(precision_at_k(raw_full, labels, k)),
         "precision_at_k_baseline": _r(precision_at_k(raw_base, labels, k)),
+        # bootstrap SE of auc_full - auc_baseline: how much of the gap is noise
+        "auc_gap_se": _r(
+            auc_gap_se(raw_full, raw_base, labels, resamples=GAP_SE_RESAMPLES, seed=SEED)
+        ),
         "calibration_curve": calibration_curve(raw_full, labels),
     }
     return metrics, raw_full, labels

@@ -3,7 +3,9 @@ import math
 import pytest
 
 from pipeline.model.metrics import (
+    _auc_np,
     _average_ranks,
+    auc_gap_se,
     calibration_curve,
     precision_at_k,
     roc_auc,
@@ -42,3 +44,28 @@ def test_calibration_curve_is_monotone_for_a_monotone_signal():
     rates = [b["hit_rate"] for b in curve]
     assert rates == sorted(rates)
     assert sum(b["n"] for b in curve) == 100
+
+
+def test_auc_np_matches_roc_auc_with_ties():
+    import random
+
+    import numpy as np
+
+    rng = random.Random(3)
+    scores = [round(rng.random(), 1) for _ in range(300)]  # many ties
+    labels = [int(rng.random() < 0.3) for _ in range(300)]
+    assert _auc_np(np.array(scores), np.array(labels)) == pytest.approx(roc_auc(scores, labels))
+
+
+def test_auc_gap_se_is_seeded_and_zero_for_identical_scores():
+    import random
+
+    rng = random.Random(4)
+    a = [rng.random() for _ in range(400)]
+    labels = [int(rng.random() < 0.25) for _ in range(400)]
+    b = [x + rng.gauss(0, 0.3) for x in a]
+    se = auc_gap_se(a, b, labels, seed=7)
+    assert se == auc_gap_se(a, b, labels, seed=7)
+    assert 0 < se < 0.1
+    assert auc_gap_se(a, a, labels, seed=7) == 0
+    assert math.isnan(auc_gap_se(a, b, [0] * 400))
