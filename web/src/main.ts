@@ -870,11 +870,18 @@ function navSnapshot(): Snapshot {
           ? "place-forests"
           : "place-here"
         : view;
-  return { start: startView, detail: panel?.openSlug() ?? null };
+  const dialog = document.querySelector("dialog[open]") !== null;
+  return { start: startView, detail: panel?.openSlug() ?? null, ...(dialog ? { dialog } : {}) };
 }
 
 /** Show what an older (or, going forward, newer) entry showed. */
 async function applyNavSnapshot(snap: Snapshot): Promise<void> {
+  // Back with a dialog open (About, the photo viewer) closes the dialog only:
+  // the entry behind it is what the dialog lay over.
+  if (!snap.dialog) {
+    for (const dialog of document.querySelectorAll<HTMLDialogElement>("dialog[open]"))
+      dialog.close();
+  }
   if (snap.start === null) {
     if (start.isOpen()) leaveStart();
   } else {
@@ -894,3 +901,12 @@ async function applyNavSnapshot(snap: Snapshot): Promise<void> {
 }
 
 navigation = initNavigation({ current: navSnapshot, apply: applyNavSnapshot });
+
+// A modal dialog opening or closing, by any route (its button, Escape, the
+// backdrop, a phone's own Back), is a change Back follows.
+// (showModal() sets the open attribute and close() removes it.)
+new MutationObserver(() => navigation?.record()).observe(document.body, {
+  subtree: true,
+  attributes: true,
+  attributeFilter: ["open"],
+});

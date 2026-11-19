@@ -58,6 +58,14 @@ map returns to the map's entry, so the map is not in the history twice. A
 species chosen in the start screen's picker lands as list + page, so Back goes
 page → list → start screen.
 
+A modal dialog (About, the photo viewer, any native `<dialog>` shown with
+`showModal`) also gets an entry of its own, over whatever it lies on. Back
+closes the dialog and nothing else; a second Back then does what it did
+before. Closing it with its own button, Escape, the backdrop or a phone's own
+Back (Chrome closes a modal dialog itself) goes back through its entry, so
+none is left behind. Forward or a reload onto such an entry, with no dialog
+to bring back, steps back off it.
+
 The following get no entry:
 
 - **The map itself:** the pin, the camera and the find card.
@@ -90,8 +98,17 @@ over a `HistoryLike`. Both are tested with a fake history.
     frozen since 2025-09, and postal districts change a few times a year. Both
     services answer the web's own Datafordeler API-Key, so no pipeline
     credentials are involved.
-- **A town or postal district is a suggestion of its own**, listed after the
-  forests and before the addresses, with a town icon.
+- **A town or postal district is a suggestion of its own**, with a town icon.
+  Forests and towns are listed together by how well the name matches: the
+  name itself first, then names that begin with what is typed, then names
+  that only contain it ("Troldbjerg" for "rold"); a forest before a town of
+  the same rank, and all of them before the addresses. So "Rold" lists the
+  village and Rold Skov first, "København" the city above Københavnerskoven,
+  and "Rold Skov" the forest first. No two suggestions read the same: a
+  second town of a name, or one that shares a forest's name, says its postal
+  district ("Frederiksberg · 4180 Sorø"); only the city keeps its bare name.
+  A query that is just a town's or a district's name asks the address
+  service nothing: it would only answer with streets that sound alike.
   - "Silkeborg" gives the town, "8600" gives the district, and "Rold" gives
     Rold Skov (the forest), then the village of Rold.
   - Choosing one sets the pin there and flies to a zoom that fits its size.
@@ -112,7 +129,9 @@ over a `HistoryLike`. Both are tested with a fake history.
   - A town that is not a postal district's name counts only after a comma or
     a house number ("Hovedvejen 3 Rold"). This keeps a street or forest name
     ending in a town's name from being cut in two ("Rold Skov").
-  - When the narrowed search finds nothing, the query is tried again as typed.
+  - When the narrowed search finds nothing, the street is searched
+    nationwide, the town itself is listed first, and a line above the
+    addresses says so: "Ingen Hovedgaden 1 i Rold – adresser andre steder:".
 - **A forest with a town** ("Vesterskov Silkeborg") lists the forests of
   that name within 20 km of the town, the name itself first and then the
   nearest, each with how far it is ("Vesterskov · 5 km fra Silkeborg"), since
@@ -130,8 +149,9 @@ over a `HistoryLike`. Both are tested with a fake history.
 - A town search works without the address service. When the service is down,
   towns and forests still show, and the message says only addresses are
   missing.
-- The town list is a file in the repository that has to be rebuilt by hand
-  when postal districts change. Running `node web/scripts/gen-places.mjs`
+- The town list is a file in the repository, built 2026-11-19, that has to
+  be rebuilt by hand, at least once a year (postal districts change a few
+  times a year). Running `node web/scripts/gen-places.mjs`
   takes about two minutes.
 - Without a town in the query, addresses still come in the service's postal
   number order. Ranking them by the map's view would need every hit looked

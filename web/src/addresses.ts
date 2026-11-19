@@ -27,6 +27,7 @@
 
 import {
   loadPlaceIndex,
+  isPlaceName,
   matchPlaces,
   normalizeName,
   parseAddressQuery,
@@ -199,35 +200,50 @@ export function mergeHits(lists: string[][], max: number): string[] {
   return out;
 }
 
+/** What an address search found. `missed`: a town or postal number was read
+ * out of the query and has no such address; what is listed is from anywhere. */
+export interface AddressResult {
+  addresses: AddressSuggestion[];
+  missed?: { street: string; town: string; place: PlaceSuggestion | null };
+}
+
 /**
  * Addresses for what is typed. A town or postal number in the query narrows
  * the search to its postal district (placeindex.ts parseAddressQuery); when
  * that finds nothing (a street the town does not have, a town misread), the
- * query is tried again as typed. Only the typed text goes to the service.
+ * query is tried again as typed, and the result says so. A query that is just
+ * a town's or postal district's name asks nothing: the service would only
+ * answer with streets that sound alike. Only the typed text goes to the
+ * service.
  */
-export async function searchAddresses(
-  query: string,
-  signal?: AbortSignal,
-): Promise<AddressSuggestion[]> {
+export async function searchAddresses(query: string, signal?: AbortSignal): Promise<AddressResult> {
   const q = query.trim();
-  if (q.length < 3 || !TOKEN) return [];
+  if (q.length < 3 || !TOKEN) return { addresses: [] };
 
   const index = await loadPlaceIndex().catch(() => null); // without it: the query as typed
+  if (index && isPlaceName(index, q)) return { addresses: [] };
   const parsed: AddressQuery = index ? parseAddressQuery(index, q) : { texts: [q], scoped: false };
   const prefer = parsed.prefer ?? [];
   let ids = mergeHits(
     await Promise.all(parsed.texts.map((t) => soeg(t, signal, prefer))),
     MAX_RESULTS,
   );
+  let missed: AddressResult["missed"];
   if (ids.length === 0 && parsed.scoped && parsed.texts.length > 0) {
-    ids = mergeHits([await soeg(q, signal)], MAX_RESULTS);
+    ids = mergeHits([await soeg(parsed.street ?? q, signal)], MAX_RESULTS);
+    if (parsed.street && parsed.town) {
+      missed = { street: parsed.street, town: parsed.town, place: parsed.place ?? null };
+    }
   }
-  return lookup(ids, signal);
+  return { addresses: await lookup(ids, signal), missed };
 }
 
 /** Towns and postal districts for what is typed (the app's own list; no
  * request to the address service). Empty while the list cannot be had. */
-export async function searchTowns(query: string): Promise<PlaceSuggestion[]> {
+export async function searchTowns(
+  query: string,
+  taken: ReadonlySet<string> = new Set(),
+): Promise<PlaceSuggestion[]> {
   const index = await loadPlaceIndex().catch(() => null);
-  return index ? matchPlaces(index, query) : [];
+  return index ? matchPlaces(index, query, 3, taken) : [];
 }

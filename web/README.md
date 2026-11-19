@@ -55,7 +55,9 @@ number after an address ("Vestergade 10 Silkeborg") is turned into the
 postal number the address service filters on (`src/placeindex.ts`). Only the
 typed text goes to the service. Rebuild the town list with
 `node scripts/gen-places.mjs` (reads `VITE_DATAFORDELER_API_KEY` from
-`.env.local`; about two minutes).
+`.env.local`; about two minutes). The list in the repository was built on 2026-11-19 (its `generated`
+field says when). Rebuild it at least once a year: postal districts change a
+few times a year, Danske Stednavne (frozen since 2025-09) whenever it resumes.
 
 ## Forests
 

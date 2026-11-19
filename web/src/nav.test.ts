@@ -73,6 +73,25 @@ describe("plan", () => {
   });
 });
 
+describe("plan with a dialog", () => {
+  const D = (snap: Snapshot): Snapshot => ({ ...snap, dialog: true });
+
+  it("gives an open dialog its own entry, and closing it goes back through it", () => {
+    expect(plan([MAP], D(MAP))).toEqual({ kind: "ops", ops: [{ op: "push", snap: D(MAP) }] });
+    expect(plan([MAP, D(MAP)], MAP)).toEqual({ kind: "back", to: 0 });
+    const page = s(null, "x");
+    expect(plan([MAP, page], D(page))).toEqual({
+      kind: "ops",
+      ops: [{ op: "push", snap: D(page) }],
+    });
+    expect(plan([MAP, page, D(page)], page)).toEqual({ kind: "back", to: 1 });
+  });
+
+  it("a Forward or reload into a dialog that is not open goes back off it", () => {
+    expect(plan([MAP, D(MAP)], MAP)).toEqual({ kind: "back", to: 0 });
+  });
+});
+
 describe("readNavState", () => {
   it("reads our own entries and nothing else", () => {
     expect(readNavState({ svk: 1, stack: [HOME, s(null, "a")] })).toEqual({
@@ -207,6 +226,25 @@ describe("initNavigation", () => {
     await b.settle();
     expect(b.index()).toBe(0);
     expect(b.top()).toEqual(MAP);
+  });
+
+  it("Back with a dialog open closes the dialog only; its own button leaves no entry", async () => {
+    const b = fakeBrowser();
+    const app = fakeApp(b, MAP);
+    app.go(s(null, "x"));
+    app.go({ ...s(null, "x"), dialog: true });
+    expect(b.length()).toBe(3);
+    b.back();
+    await b.settle();
+    expect(app.shown).toEqual(s(null, "x")); // the page is still there
+    b.back();
+    await b.settle();
+    expect(app.shown).toEqual(MAP);
+    // opened again and closed with its own button: back through its entry
+    app.go({ ...MAP, dialog: true });
+    app.go(MAP);
+    await b.settle();
+    expect(b.index()).toBe(0);
   });
 
   it("a reload shows the entry it reloaded, with the entries behind it", async () => {

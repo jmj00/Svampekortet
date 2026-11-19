@@ -4,6 +4,8 @@ import { mergeHits, preferHits } from "./addresses";
 import placesText from "./data/places.json?raw";
 import {
   buildPlaceIndex,
+  distinctTexts,
+  isPlaceName,
   districtZoom,
   matchPlaces,
   normalizeName,
@@ -155,6 +157,68 @@ describe("splitTown", () => {
   });
 });
 
+describe("no two suggestions read the same", () => {
+  it("names the district of a second town of a name, not of the city itself", () => {
+    const list = distinctTexts([
+      {
+        text: "Frederiksberg",
+        full: "Frederiksberg · 2000",
+        label: "Frederiksberg",
+        target: [12.5, 55.68],
+        zoom: 12,
+      },
+      {
+        text: "Frederiksberg",
+        full: "Frederiksberg · 4180 Sorø",
+        label: "Frederiksberg",
+        target: [11.6, 55.4],
+        zoom: 14,
+      },
+    ]);
+    expect(list.map((s) => s.text)).toEqual(["Frederiksberg", "Frederiksberg · 4180 Sorø"]);
+  });
+
+  it("names the district of a town that has a forest's name", () => {
+    const list = distinctTexts(
+      [{ text: "Rold", full: "Rold · 9510 Arden", label: "Rold", target: [9.8, 56.8], zoom: 14 }],
+      new Set(["Rold"]),
+    );
+    expect(list.map((s) => s.text)).toEqual(["Rold · 9510 Arden"]);
+  });
+
+  it("never shows two of the same in the published list", () => {
+    for (const q of ["Frederiksberg", "Hald", "Nørreby", "Vester", "Skov", "Ny"]) {
+      const texts = matchPlaces(buildPlaceIndex(JSON.parse(placesText) as RawPlaces), q).map(
+        (s) => s.text,
+      );
+      expect(new Set(texts).size).toBe(texts.length);
+    }
+  });
+});
+
+describe("isPlaceName", () => {
+  it("is a town's or district's name and nothing else", () => {
+    expect(isPlaceName(index, "Silkeborg")).toBe(true);
+    expect(isPlaceName(index, "aarhus c")).toBe(true);
+    expect(isPlaceName(index, "Silkeborgvej")).toBe(false);
+    expect(isPlaceName(index, "Rold 3")).toBe(false);
+  });
+});
+
+describe("parseAddressQuery says which town it read", () => {
+  it("gives the street, the town and the town itself", () => {
+    expect(parseAddressQuery(index, "Hovedgaden 1 Rold")).toMatchObject({
+      street: "Hovedgaden 1",
+      town: "Rold",
+      place: { label: "Rold" },
+    });
+    expect(parseAddressQuery(index, "Vestergade 10 8600")).toMatchObject({
+      street: "Vestergade 10",
+      town: "8600 Silkeborg",
+    });
+  });
+});
+
 describe("zooms", () => {
   it("goes closer for a smaller town", () => {
     expect(townZoom(0.2)).toBeGreaterThan(townZoom(1));
@@ -200,7 +264,7 @@ describe("the published list", () => {
     expect(real.towns.length).toBeGreaterThan(8000);
     expect(matchPlaces(real, "Silkeborg")[0].text).toBe("Silkeborg");
     expect(matchPlaces(real, "Aarhus")[0].text).toBe("Aarhus"); // not its middle's district
-    expect(parseAddressQuery(real, "Nørregade 5 København")).toEqual({
+    expect(parseAddressQuery(real, "Nørregade 5 København")).toMatchObject({
       texts: ["Nørregade 5"],
       scoped: true,
       prefer: expect.arrayContaining(["københavn k"]),

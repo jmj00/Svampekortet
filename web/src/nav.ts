@@ -26,6 +26,8 @@ export interface Snapshot {
   start: StartSnap;
   /** The species whose page is open in the panel, or null for the list. */
   detail: string | null;
+  /** A modal dialog (About, the photo viewer) is open over the rest. */
+  dialog?: boolean;
 }
 
 export interface NavState {
@@ -45,8 +47,11 @@ const NONE: Plan = { kind: "none" };
 const TRAVEL_TIMEOUT_MS = 1500;
 
 export function sameSnapshot(a: Snapshot, b: Snapshot): boolean {
-  return a.start === b.start && a.detail === b.detail;
+  return a.start === b.start && a.detail === b.detail && Boolean(a.dialog) === Boolean(b.dialog);
 }
+
+/** What lies under a dialog. */
+const under = (s: Snapshot): Snapshot => ({ start: s.start, detail: s.detail });
 
 const isStep = (start: StartSnap): boolean => start !== null && start !== "home";
 
@@ -70,6 +75,20 @@ export function plan(stack: readonly Snapshot[], next: Snapshot): Plan {
     behind && sameSnapshot(behind, next)
       ? { kind: "back", to: top - 1 }
       : { kind: "ops", ops: [{ op: "replace", snap: next }] };
+
+  // A dialog has an entry of its own, so Back closes it and nothing else.
+  if (Boolean(cur.dialog) !== Boolean(next.dialog)) {
+    if (next.dialog) {
+      return sameSnapshot(under(cur), under(next))
+        ? { kind: "ops", ops: [{ op: "push", snap: next }] }
+        : { kind: "ops", ops: [{ op: "replace", snap: next }] };
+    }
+    // closed (its own button, Escape, a phone's own Back): back past its entry
+    if (sameSnapshot(under(cur), next)) return backOrReplace();
+    if (behind && sameSnapshot(behind, under(cur))) return { kind: "back", to: top - 1 };
+    return { kind: "ops", ops: [{ op: "replace", snap: next }] };
+  }
+  if (cur.dialog) return { kind: "ops", ops: [{ op: "replace", snap: next }] };
 
   if (next.start !== null) {
     if (cur.start === null) return { kind: "ops", ops: [{ op: "push", snap: next }] };
@@ -114,7 +133,12 @@ export function readNavState(state: unknown): NavState | null {
       return null;
     }
   }
-  return { svk: 1, stack: stack.map((s) => ({ start: s.start, detail: s.detail })) };
+  return {
+    svk: 1,
+    stack: stack.map((s) =>
+      s.dialog === true ? { start: s.start, detail: s.detail, dialog: true } : under(s),
+    ),
+  };
 }
 
 /** The part of `window.history` used here, so tests can drive a fake one. */

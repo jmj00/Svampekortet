@@ -35,6 +35,24 @@ export function searchMessage(outcome: SearchOutcome, verb: "tryk" | "klik"): st
     : `Ingen skove, byer eller adresser matcher „${query}“. Prøv et vejnavn med by, fx „Vestergade 10, Silkeborg“, eller ${verb} på kortet.`;
 }
 
+/** How well a name matches what is typed: 0 it is the name, 1 the name or
+ * one of its words begins with it, 2 it is inside a word ("Trold…" for
+ * "rold"). */
+export function nameRank(name: string, query: string): number {
+  const key = (s: string): string =>
+    s
+      .toLocaleLowerCase("da")
+      .replace(/aa/g, "å")
+      .replace(/[\s\-.,]+/g, " ")
+      .trim();
+  const n = key(name);
+  const q = key(query);
+  if (!q) return 2;
+  if (n === q || n.replace(/ /g, "") === q.replace(/ /g, "")) return 0;
+  if (n.startsWith(q) || n.split(" ").some((word) => word.startsWith(q))) return 1;
+  return 2;
+}
+
 /** "3 km fra Silkeborg", "i Silkeborg" under a kilometre. */
 export function distanceText(
   { lon, lat }: { lon: number; lat: number },
@@ -91,13 +109,14 @@ export function attachPlaceSearch(opts: {
     listbox,
     enterPicksFirst: opts.enterPicksFirst,
     local: (query) => {
-      let forests = opts.searchForests(query);
+      const forests = opts.searchForests(query);
       // "Vesterskov Silkeborg": the forests of that name near the town
       const index = forests.length === 0 ? loadedPlaceIndex() : null;
       const split = index ? splitTown(index, query) : null;
       if (split && split.rest) {
         // several forests share a name: say which one by how far from the town
         return opts.searchForests(split.rest, split.at).map((forest) => ({
+          rank: 0,
           text: `${forest.name} · ${distanceText(forest, split.at, split.town)}`,
           label: forest.name,
           target: [forest.lon, forest.lat] as [number, number],
@@ -106,6 +125,7 @@ export function attachPlaceSearch(opts: {
       return forests.map((forest) => ({
         text: forest.name,
         target: [forest.lon, forest.lat] as [number, number],
+        rank: nameRank(forest.name, query),
       }));
     },
     localIcon: ICON_TREE,

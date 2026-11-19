@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { distanceText, searchMessage } from "./placesearch";
+import { byRank, missedText } from "./addresscombo";
+import { distanceText, nameRank, searchMessage } from "./placesearch";
 
 describe("searchMessage", () => {
   it("says nothing while there is nothing to say", () => {
@@ -40,6 +41,46 @@ describe("distanceText", () => {
     );
     expect(distanceText({ lon: 9.551, lat: 56.182 }, [9.551, 56.181], "Silkeborg")).toBe(
       "i Silkeborg",
+    );
+  });
+});
+
+describe("ranking forests and towns together", () => {
+  it("rates a name by how it matches", () => {
+    expect(nameRank("Rold Skov", "Rold Skov")).toBe(0);
+    expect(nameRank("Rold Skov", "rold")).toBe(1);
+    expect(nameRank("Nørre Vesterskov", "vester")).toBe(1);
+    expect(nameRank("Troldbjerg Skov", "rold")).toBe(2);
+    expect(nameRank("Århus Skov", "aarhus skov")).toBe(0);
+  });
+
+  it("puts the town that is the name above forests that only contain it", () => {
+    const items = [
+      { text: "Rold Skov", kind: "local", rank: 1 },
+      { text: "Rold Hule", kind: "local", rank: 1 },
+      { text: "Troldbjerg Skov", kind: "local", rank: 2 },
+      { text: "Rold · 9510 Arden", kind: "place", rank: 0 },
+      { text: "Roldsløkker", kind: "place", rank: 1 },
+    ];
+    expect(byRank(items).map((i) => i.text)).toEqual([
+      "Rold · 9510 Arden",
+      "Rold Skov",
+      "Rold Hule",
+      "Roldsløkker",
+      "Troldbjerg Skov",
+    ]);
+    // an exact forest stays first
+    expect(
+      byRank([
+        { text: "Rold Skov", kind: "local", rank: 0 },
+        { text: "Rold Skovhus", kind: "place", rank: 1 },
+      ]).map((i) => i.text),
+    ).toEqual(["Rold Skov", "Rold Skovhus"]);
+  });
+
+  it("says when the town typed has no such address", () => {
+    expect(missedText("Hovedgaden 1", "Rold")).toBe(
+      "Ingen Hovedgaden 1 i Rold – adresser andre steder:",
     );
   });
 });

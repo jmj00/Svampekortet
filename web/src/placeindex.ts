@@ -158,6 +158,12 @@ export interface AddressQuery {
   texts: string[];
   /** True when a town or postal number was read out of the query. */
   scoped: boolean;
+  /** The street part and the town as the query names them, when a town or
+   * postal number was read out (for saying that it has no such address). */
+  street?: string;
+  town?: string;
+  /** The town or district itself, to offer when it has no such address. */
+  place?: PlaceSuggestion;
   /** Postal district names (normalised) whose addresses go first: for a
    * city of many postal numbers (København K has one for every few
    * streets), where narrowing by number would miss most of it. */
@@ -192,7 +198,15 @@ export function parseAddressQuery(index: PlaceIndex, query: string): AddressQuer
   for (let i = n - 1; i >= 0; i--) {
     if (!/^\d{4}$/.test(tokens[i]) || !index.byPostnr.has(tokens[i])) continue;
     if (i === 0) return { texts: [], scoped: true }; // just a number: a district, not an address
-    return { texts: [`${tokens.slice(0, i).join(" ")}, ${tokens[i]}`], scoped: true };
+    const district = index.byPostnr.get(tokens[i]) as PostalDistrict;
+    const street = tokens.slice(0, i).join(" ");
+    return {
+      texts: [`${street}, ${tokens[i]}`],
+      scoped: true,
+      street,
+      town: `${district.postnr} ${district.name}`,
+      place: districtSuggestion(district),
+    };
   }
 
   // a town at the end: the longest that is one, up to three words
@@ -200,9 +214,17 @@ export function parseAddressQuery(index: PlaceIndex, query: string): AddressQuer
     const rest = tokens.slice(0, n - k);
     const name = tokens.slice(n - k).join(" ");
     const evidence = commaBefore.has(n - k) || rest.some((t) => /\d/.test(t));
-    let postnrs = postalFor(index, name).map((p) => p.postnr);
+    const districts = postalFor(index, name);
+    let postnrs = districts.map((p) => p.postnr);
+    let place: PlaceSuggestion | undefined;
+    let townName = districts[0]?.name;
+    const towns = townsFor(index, name);
+    if (towns[0]) {
+      place = townSuggestion(index, towns[0]);
+      townName = towns[0].name;
+    } else if (districts[0]) place = districtSuggestion(districts[0]);
     if (postnrs.length === 0 && evidence) {
-      postnrs = townsFor(index, name)
+      postnrs = towns
         .map((town) => index.postal[town.postal]?.postnr)
         .filter((p): p is string => Boolean(p));
     }
@@ -211,11 +233,31 @@ export function parseAddressQuery(index: PlaceIndex, query: string): AddressQuer
     const street = rest.join(" ");
     if (unique.length > MAX_SCOPES) {
       const names = unique.map((p) => normalizeName(index.byPostnr.get(p)?.name ?? ""));
-      return { texts: [street], scoped: true, prefer: [...new Set(names)].filter(Boolean) };
+      return {
+        texts: [street],
+        scoped: true,
+        street,
+        town: townName,
+        place,
+        prefer: [...new Set(names)].filter(Boolean),
+      };
     }
-    return { texts: unique.map((p) => `${street}, ${p}`), scoped: true };
+    return {
+      texts: unique.map((p) => `${street}, ${p}`),
+      scoped: true,
+      street,
+      town: townName,
+      place,
+    };
   }
   return plain;
+}
+
+/** Whether the query is just a town's or a postal district's name (no
+ * house number, nothing else). */
+export function isPlaceName(index: PlaceIndex, query: string): boolean {
+  const key = normalizeName(query);
+  return !/\d/.test(key) && (index.townsByName.has(key) || index.postalByName.has(key));
 }
 
 /** A town or postal district the search offers, and how close to fly. */
@@ -226,6 +268,11 @@ export interface PlaceSuggestion {
   label: string;
   target: [number, number];
   zoom: number;
+  /** 0: what was typed is its name (or postal number); 1: its name begins so. */
+  rank?: number;
+  /** The text with the postal district, for telling it apart from another
+   * suggestion of the same name. */
+  full?: string;
 }
 
 /** How close to fly to a town of this size: its surroundings in view. */
@@ -252,14 +299,25 @@ function townSuggestion(index: PlaceIndex, town: Town): PlaceSuggestion {
   // A city is known by its name: its middle may lie in any of its districts
   // (Aarhus's in 8230 Åbyhøj), so no district is named for it.
   const city = town.type === 0 && (town.radiusKm >= 2 || hasDistricts(index, town.name));
-  if (district && !city) {
-    text =
+  let full = town.name;
+  if (district) {
+    full =
       normalizeName(district.name) === normalizeName(town.name)
         ? `${town.name} · ${district.postnr}`
         : `${town.name} · ${district.postnr} ${district.name}`;
+    if (!city) text = full;
   }
-  if (town.type === 2) text += " (sommerhusområde)";
-  return { text, label: town.name, target: [town.lon, town.lat], zoom: townZoom(town.radiusKm) };
+  if (town.type === 2) {
+    text += " (sommerhusområde)";
+    full += " (sommerhusområde)";
+  }
+  return {
+    text,
+    full,
+    label: town.name,
+    target: [town.lon, town.lat],
+    zoom: townZoom(town.radiusKm),
+  };
 }
 
 /** Whether the town's name is that of postal districts ("Aarhus C"). */
@@ -290,12 +348,18 @@ function districtSuggestion(district: PostalDistrict): PlaceSuggestion {
  * name one slip off counts when nothing else matches. Nothing under three
  * letters: that is where most names begin.
  */
-export function matchPlaces(index: PlaceIndex, query: string, limit = 3): PlaceSuggestion[] {
+export function matchPlaces(
+  index: PlaceIndex,
+  query: string,
+  limit = 3,
+  /** Texts already shown (the forests): a town of the same name says where. */
+  taken: ReadonlySet<string> = new Set(),
+): PlaceSuggestion[] {
   const typed = query.trim();
   const number = /^(\d{4})(?:\s*,?\s+(.*))?$/.exec(typed);
   if (number) {
     const district = index.byPostnr.get(number[1]);
-    return district ? [districtSuggestion(district)] : [];
+    return district ? [{ ...districtSuggestion(district), rank: 0 }] : [];
   }
   const key = normalizeName(typed);
   if (key.length < 3 || /\d/.test(key)) return [];
@@ -337,8 +401,38 @@ export function matchPlaces(index: PlaceIndex, query: string, limit = 3): PlaceS
       !townKeys.some((t) => normalizeName(c.s.label.replace(/^\d{4} /, "")).startsWith(t)),
   );
   kept.sort((a, b) => a.rank[0] - b.rank[0] || a.rank[1] - b.rank[1] || a.rank[2] - b.rank[2]);
-  return kept.slice(0, limit).map((c) => c.s);
+  return distinctTexts(
+    kept.slice(0, limit).map((c) => ({ ...c.s, rank: c.rank[0] })),
+    taken,
+  );
 }
+
+/** Pure: no two suggestions read the same. Where a name is shown twice (or is
+ * a forest's too), each says its postal district, except the first, when it
+ * is the city itself (the one shown by its name alone); one that would still
+ * read the same as another is left out. */
+export function distinctTexts(
+  list: PlaceSuggestion[],
+  taken: ReadonlySet<string> = new Set(),
+): PlaceSuggestion[] {
+  const count = new Map<string, number>();
+  for (const s of list) count.set(s.text, (count.get(s.text) ?? 0) + 1);
+  const seen = new Set(taken);
+  const out: PlaceSuggestion[] = [];
+  list.forEach((s, i) => {
+    const clash = (count.get(s.text) ?? 0) > 1 || taken.has(s.text);
+    const firstCity = i === list.findIndex((o) => o.text === s.text) && !taken.has(s.text);
+    const text =
+      clash && !(firstCity && s.full !== s.text && isBare(s)) ? (s.full ?? s.text) : s.text;
+    if (seen.has(text)) return;
+    seen.add(text);
+    out.push({ ...s, text });
+  });
+  return out;
+}
+
+/** Shown by its name alone (a city): its text has no district in it. */
+const isBare = (s: PlaceSuggestion): boolean => !s.text.includes(" · ") && !/^\d{4} /.test(s.text);
 
 /** A town at the end of what is typed ("Vesterskov Silkeborg"): the words
  * before it, and where the town is. The town must be one by its exact name
