@@ -23,6 +23,7 @@ import {
 import { SpeciesPanel } from "./panel";
 import { clearPinRing, showPinRing } from "./pinring";
 import { attachPlaceSearch, type PlaceKind } from "./placesearch";
+import { bindInstallButton } from "./install";
 import { registerServiceWorker } from "./register-sw";
 import { initErrorMonitoring } from "./sentry";
 import { initSheet } from "./sheet";
@@ -39,6 +40,7 @@ import type { ForestPoint, Manifest } from "./types";
 
 initErrorMonitoring();
 registerServiceWorker();
+bindInstallButton(document.getElementById("start-install") as HTMLButtonElement);
 
 // The pin from the last visit, remembered on this device only (startstate.ts).
 // With one, the app opens on the map around it; without, on the start screen.

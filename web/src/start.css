@@ -559,6 +559,49 @@
   }
 }
 
+/* Under the way to the map: quieter, it is not a way in. */
+.start__install {
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.75rem;
+  margin-top: -0.35rem;
+  padding: 0 1rem;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: none;
+  color: var(--muted);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.start__install[hidden] {
+  display: none;
+}
+
+.start__install svg {
+  width: 1.1rem;
+  height: 1.1rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+@media (hover: hover) {
+  .start__install:hover {
+    color: var(--link);
+  }
+
+  .start__install:hover span {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+}
+
 /* Pinned under the home view: it never scrolls out of sight. */
 .start__safety {
   flex: none;
@@ -1631,6 +1674,7 @@
 
   .start__tag,
   .start__maphint,
+  .start__install,
   .start__flows .flow__sub,
   .start__safety p span {
     display: none;

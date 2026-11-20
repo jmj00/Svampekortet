@@ -169,6 +169,15 @@
                   <path d="M5 12h14M13 6l6 6-6 6" />
                 </svg>
               </button>
+              <!-- Shown by src/install.ts only where the app can go on the home
+                   screen and is not already running from there. -->
+              <button type="button" class="start__install" id="start-install" hidden>
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <rect x="6.5" y="2.5" width="11" height="19" rx="2.5" />
+                  <path d="M12 7v7M9 11l3 3 3-3M10.5 18.5h3" />
+                </svg>
+                <span>Føj til hjemmeskærm</span>
+              </button>
             </div>
             <div class="start__view" data-view="place" hidden></div>
             <div class="start__view" data-view="species" hidden></div>

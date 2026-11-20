@@ -8,6 +8,7 @@
 import type { IControl } from "maplibre-gl";
 import { brandMark, openSheet } from "./dialog";
 import { h, icon, type IconName } from "./dom";
+import { bindInstallButton } from "./install";
 import { scoreScale } from "./scoreinfo";
 import type { Manifest } from "./types";
 
@@ -196,6 +197,11 @@ export function openAbout(manifest: Manifest, scrollTo?: AboutSection): void {
   // --- how to use it ---
   const usage = section("brug", "map", "Sådan bruger du kortet");
   usage.append(howItWorks());
+  const installButton = h("button", "about-install");
+  installButton.type = "button";
+  installButton.append(icon("install"), h("span", undefined, "Føj til hjemmeskærm"));
+  bindInstallButton(installButton);
+  usage.append(installButton);
 
   // --- the score ---
   const score = section("tallet", "gauge", "Forholdstallet 0–100");
