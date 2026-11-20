@@ -202,11 +202,14 @@ re-tuned one.
 
 ### Reading it
 
-- Habitat density alone is already a strong **spatial** ranker (`week_matched`
-  baseline AUC ≈ 0.83–0.94 for the core set). Once the query week is fixed,
-  seasonality and weather can't improve on it and cost a little — within the
-  0.035 tolerance for every core species, past it for 14 sparse-corpus `extra`
-  species.
+- Habitat density alone is already a strong **spatial** ranker (habitat-only
+  AUC ≈ 0.80–0.95 against `week_matched` negatives). Since
+  [ADR-0023](adr/0023-week-matched-baseline-includes-seasonality.md) the
+  `week_matched` baseline is **habitat × seasonality**: on the map every place
+  is scored for the same day, so seasonality cannot change spatial ranking and
+  only adds ±3-day jitter noise here. The regime now tests what it is for —
+  whether weather (and host tree) damage spatial ranking. Median gap −0.005;
+  worst core *Pleurotus ostreatus* −0.025, a real but small weather cost.
 - When the date is free (`calendar_random`), the full model clearly wins for
   everything: it correctly says "not now" out of season. This is the regime the
   app runs in, and the only one where all 48 species clear their margin.
