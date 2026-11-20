@@ -90,6 +90,12 @@
   initial-value: 0px;
 }
 
+@property --sheet-rest {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+
 @media (prefers-color-scheme: dark) {
   :root {
     --brand: #a8c79f;
@@ -493,7 +499,9 @@ input[type="search"]::-webkit-search-cancel-button {
 #sheet {
   position: absolute;
   z-index: 3;
-  top: calc(var(--shell-top) + 3rem + 0.5rem); /* fully open: just below the search */
+  /* Fully open: just below the search. At rest sheet.ts lowers the top edge by
+     --sheet-rest instead of moving the sheet with a transform (see sheet.ts). */
+  top: calc(var(--shell-top) + 3rem + 0.5rem + var(--sheet-rest));
   right: 0;
   bottom: 0;
   left: 0;
