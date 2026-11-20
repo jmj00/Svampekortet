@@ -37,6 +37,14 @@ const ICON_PATHS = {
     '<path d="M12 3l7.500 3v5.500c0 4.500-3.100 8.200-7.500 9.500-4.400-1.300-7.500-5-7.500-9.500V6z"/>',
   book: '<path d="M4.500 5.500A2.500 2.500 0 0 1 7 3h12.500v15H7a2.500 2.500 0 0 0-2.500 2.500z"/><path d="M4.500 20.500A2.500 2.500 0 0 0 7 21h12.500"/>',
   map: '<path d="M3.500 6.500l5.500-2 6 2 5.500-2v13l-5.500 2-6-2-5.500 2z"/><path d="M9 4.500v13M15 6.500v13"/>',
+  share:
+    '<path d="M12 3.500v11"/><path d="M8 7.300l4-3.800 4 3.800"/><path d="M8.500 10.500H6.500v10h11v-10h-2"/>',
+  addSquare:
+    '<rect x="4" y="4" width="16" height="16" rx="3.500"/><path d="M12 8.500v7M8.500 12h7"/>',
+  check: '<path d="M5 12.500l4.500 4.500L19 7.500"/>',
+  menu: '<circle cx="12" cy="5.500" r="1.300" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.300" fill="currentColor" stroke="none"/><circle cx="12" cy="18.500" r="1.300" fill="currentColor" stroke="none"/>',
+  install:
+    '<rect x="6.500" y="2.500" width="11" height="19" rx="2.500"/><path d="M12 7v7M9 11l3 3 3-3"/><path d="M10.500 18.500h3"/>',
 } as const;
 
 export type IconName = keyof typeof ICON_PATHS;
