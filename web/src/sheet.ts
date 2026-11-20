@@ -5,7 +5,8 @@
 //   full  up to just below the address search
 //
 // The sheet is laid out at its full height and moved with a transform, so a
-// drag never reflows the content. Once it settles, the part hanging below the
+// drag never reflows the content; at rest it is placed without one (see
+// toRest below). Once it settles, the part hanging below the
 // screen is taken off the scroll area (--sheet-hidden), so the content can
 // always be scrolled to its end by wheel, keyboard or assistive tech, at any
 // snap. By touch the usual map-app rule applies: a vertical drag on the content
@@ -103,6 +104,39 @@ export function initSheet(opts: SheetOptions): Sheet {
     sheet.style.setProperty("--sheet-hidden", `${Math.max(0, px)}px`);
   }
 
+  // Two equivalent ways to put the sheet at `visible`. Moving: laid out at full
+  // height and pushed down by a transform, the part below the screen taken off
+  // the scroll area (--sheet-hidden), so a drag or an animation never reflows.
+  // Resting: the top edge itself lowered (--sheet-rest) and no transform. iOS
+  // Safari stops painting rows of a long list scrolled inside a transformed
+  // sheet (they show, then vanish on scroll), so the transform is only there
+  // while the sheet moves. In both, the content box keeps its size and place on
+  // screen, so the swap is invisible and keeps the scroll position.
+  let resting = false;
+
+  function swapPlacement(rest: number, y: number, hidden: number): void {
+    sheet.style.transition = "none";
+    if (rest > 0) sheet.style.setProperty("--sheet-rest", `${rest}px`);
+    else sheet.style.removeProperty("--sheet-rest");
+    sheet.style.setProperty("--sheet-y", `${y}px`);
+    setHidden(hidden);
+    void sheet.offsetHeight; // commit before the transition comes back
+    sheet.style.removeProperty("transition");
+  }
+
+  function toRest(): void {
+    if (resting || dragging) return;
+    resting = true;
+    swapPlacement(heights.full - visible, 0, 0);
+  }
+
+  function toMoving(): void {
+    if (!resting) return;
+    resting = false;
+    const y = heights.full - visible;
+    swapPlacement(0, y, y);
+  }
+
   function settle(): void {
     window.clearTimeout(settleTimer);
     settleTimer = undefined;
@@ -110,11 +144,13 @@ export function initSheet(opts: SheetOptions): Sheet {
     // At peek the content is entirely below the screen: keep it out of the tab
     // order and away from assistive tech until the sheet is raised again.
     body.inert = current === "peek";
+    toRest();
   }
 
   /** `halfMeans`: where a request for "half" goes when there are only two stops. */
   function snapTo(next: Snap, animate = true, halfMeans: "peek" | "full" = "full"): void {
     if (!active) return;
+    toMoving();
     wanted = next;
     if (next === "half" && twoStops()) next = halfMeans;
     const rising = heights[next] > visible;
@@ -148,6 +184,8 @@ export function initSheet(opts: SheetOptions): Sheet {
     active = phone.matches;
     if (!active) {
       window.clearTimeout(settleTimer);
+      resting = false;
+      sheet.style.removeProperty("--sheet-rest");
       sheet.style.removeProperty("--sheet-y");
       sheet.style.removeProperty("--sheet-hidden");
       app.style.removeProperty("--map-inset-bottom");
@@ -157,6 +195,7 @@ export function initSheet(opts: SheetOptions): Sheet {
       if (wasActive) opts.onLayout?.();
       return;
     }
+    toMoving(); // measure() reads the full height off the moving layout
     measure();
     snapTo(wanted, false, "peek"); // a short screen opens on the map, not the list
     opts.onLayout?.();
@@ -178,6 +217,7 @@ export function initSheet(opts: SheetOptions): Sheet {
   let layoutPending = false;
 
   function dragStart(y: number): void {
+    toMoving();
     dragging = true;
     window.clearTimeout(settleTimer);
     app.dataset.sheetDragging = "";
