@@ -5,6 +5,19 @@ import type {
   StyleSpecification,
 } from "maplibre-gl";
 import "./map.css";
+import {
+  BASEMAP_ID,
+  BASEMAP_PREFIX,
+  DARK,
+  GLYPHS,
+  LIGHT,
+  VECTOR_SOURCE,
+  VECTOR_SOURCE_ID,
+  basemapLayers,
+  paintBasemap,
+  type BasemapPalette,
+} from "./basemapstyle";
+import { restyleForestLabels } from "./forestlabels";
 import { LocateControl } from "./locatecontrol";
 import { restyleForestScores } from "./forestscores";
 import { legendFor } from "./maplegend";
@@ -15,15 +28,16 @@ import { restylePinRing } from "./pinring";
 type RasterPaint = NonNullable<RasterLayerSpecification["paint"]>;
 
 /**
- * The basemap is a full-colour road map; under data it has to step back. The
- * raster is desaturated and softened in light mode. In dark mode it is
- * inverted (brightness min above max) and its hues rotated back by 180
- * degrees, which turns the same tiles into a dark map with light labels, so
- * the map no longer glares beside the dark panels. The dark map is also taken
- * most of the way to grey: inverted, the motorways and railways come out
- * pink, and pink belongs to the finds.
+ * The fallback basemaps (Skærmkort, OSM) are raster road maps; under data
+ * they have to step back. The raster is desaturated and softened in light
+ * mode. In dark mode it is inverted (brightness min above max) and its hues
+ * rotated back by 180 degrees, which turns the same tiles into a dark map with
+ * light labels. The dark map is also taken most of the way to grey: inverted,
+ * the motorways and railways come out pink, and pink belongs to the finds.
+ * (The vector basemap needs none of this: basemapstyle.ts has a palette per
+ * theme.)
  */
-function basemapPaint(): RasterPaint {
+function rasterPaint(): RasterPaint {
   const fade = prefersReducedMotion() ? 0 : 300;
   return mapColors().dark
     ? {
@@ -44,22 +58,29 @@ function basemapPaint(): RasterPaint {
       };
 }
 
-/** The one raster layer; its source is Skærmkort or, failing that, OSM. */
-const BASEMAP_ID = "basemap";
+function palette(): BasemapPalette {
+  return mapColors().dark ? DARK : LIGHT;
+}
+
+/** The raster layer that replaces the vector basemap if that fails. */
+const RASTER_ID = "basemap-raster";
 
 function applyBasemapTheme(map: MapLibreMap): void {
-  if (map.getLayer(BASEMAP_ID)) {
-    for (const [name, value] of Object.entries(basemapPaint())) {
-      map.setPaintProperty(BASEMAP_ID, name, value);
-    }
-  }
   if (map.getLayer("backdrop")) {
-    map.setPaintProperty("backdrop", "background-color", mapColors().backdrop);
+    map.setPaintProperty("backdrop", "background-color", palette().land);
+  }
+  if (map.getLayer(RASTER_ID)) {
+    for (const [name, value] of Object.entries(rasterPaint())) {
+      map.setPaintProperty(RASTER_ID, name, value);
+    }
+  } else {
+    paintBasemap(map, palette());
   }
 }
 
 function restyleAll(map: MapLibreMap): void {
   applyBasemapTheme(map);
+  restyleForestLabels(map);
   restyleObservations(map);
   restylePinRing(map);
   restyleForestScores(map);
@@ -112,50 +133,97 @@ function sdfiSource(token: string): RasterSourceSpecification {
 }
 
 /**
- * Only one basemap is ever requested: Skærmkort when there is a key for it,
- * OpenStreetMap otherwise. (Both used to load, one over the other, which
- * doubled the tile traffic and let OSM tiles show through while Skærmkort
- * tiles were still on their way.)
+ * The basemap is OpenStreetMap data as vector tiles from OpenFreeMap, drawn
+ * with our own style (basemapstyle.ts). Glyphs come from the same host and
+ * are kept even if the basemap falls back, so the forest names still draw.
  */
 function initialStyle(): StyleSpecification {
-  const source = SDFI_TOKEN ? "sdfi" : "osm";
   return {
     version: 8,
-    sources: { [source]: SDFI_TOKEN ? sdfiSource(SDFI_TOKEN) : OSM_SOURCE },
+    glyphs: GLYPHS,
+    sources: { [VECTOR_SOURCE_ID]: VECTOR_SOURCE },
     layers: [
-      { id: "backdrop", type: "background", paint: { "background-color": mapColors().backdrop } },
-      { id: BASEMAP_ID, type: "raster", source, paint: basemapPaint() },
+      { id: "backdrop", type: "background", paint: { "background-color": palette().land } },
+      ...basemapLayers(palette()),
     ],
   };
 }
 
+/** Skærmkort when there is a key for it, OpenStreetMap's raster otherwise. */
+function rasterSource(): { id: string; spec: RasterSourceSpecification } {
+  return SDFI_TOKEN
+    ? { id: "sdfi", spec: sdfiSource(SDFI_TOKEN) }
+    : { id: "osm", spec: OSM_SOURCE };
+}
+
+/** Swap the basemap for a raster one: the vector layers out, the raster in
+ * directly below the marker, so every data layer keeps its place. */
+function useRaster(
+  map: MapLibreMap,
+  source: { id: string; spec: RasterSourceSpecification },
+): void {
+  for (const layer of map.getStyle().layers ?? []) {
+    if (layer.id.startsWith(BASEMAP_PREFIX) || layer.id === RASTER_ID) map.removeLayer(layer.id);
+  }
+  for (const id of [VECTOR_SOURCE_ID, "sdfi", "osm"]) {
+    if (map.getSource(id)) map.removeSource(id);
+  }
+  map.addSource(source.id, source.spec);
+  map.addLayer(
+    { id: RASTER_ID, type: "raster", source: source.id, paint: rasterPaint() },
+    BASEMAP_ID,
+  );
+}
+
 /**
- * If Skærmkort fails -- a rejected request answers with an XML
- * ServiceException at HTTP 200, which surfaces as a tile that cannot be
- * decoded (e.g. an invalid/expired key) -- swap the one basemap layer over to
- * OpenStreetMap on the first error, instead of flooding decode errors.
+ * Fallbacks, each on the first error of the map in use: the vector basemap
+ * (OpenFreeMap down or blocked, before any of its tiles arrived) gives way to
+ * Skærmkort, and Skærmkort to OpenStreetMap. Skærmkort fails in its own way --
+ * a rejected request answers with an XML ServiceException at HTTP 200, which
+ * surfaces as a tile that cannot be decoded (e.g. an invalid/expired key).
+ * Once vector tiles have arrived, a later error (no signal in the forest) is
+ * left alone: a raster map would not load either.
  */
-function fallBackToOsmOnError(map: MapLibreMap): void {
-  if (!SDFI_TOKEN) return;
+function installFallbacks(map: MapLibreMap): void {
+  let vectorArrived = false;
+  const onData = (e: { sourceId?: string; tile?: unknown }): void => {
+    if (e.sourceId === VECTOR_SOURCE_ID && e.tile) {
+      vectorArrived = true;
+      map.off("sourcedata", onData);
+    }
+  };
+  map.on("sourcedata", onData);
+
+  // Not map.isStyleLoaded(): that waits for every source, and the failed one
+  // never finishes -- nor would the map's "load". Swap as soon as the style
+  // itself is in place (an error can arrive before it is), and the map then
+  // loads on the raster.
+  const whenReady = (fn: () => void): void => {
+    try {
+      fn();
+    } catch {
+      void map.once("styledata", () => whenReady(fn));
+    }
+  };
+
   const onError = (e: { error?: Error; sourceId?: string }): void => {
-    const decodeError = /could not be decoded/i.test(String(e?.error?.message ?? ""));
-    if (e?.sourceId !== "sdfi" && !decodeError) return;
-    if (!map.getSource("sdfi")) return;
-    console.warn("SDFI basemap unavailable — falling back to OpenStreetMap", e?.error);
-    map.off("error", onError);
-    const swap = (): void => {
-      if (!map.getSource("sdfi")) return;
-      // back in directly above the backdrop, under any data layers
-      const layers = map.getStyle().layers;
-      const above = layers[layers.findIndex((layer) => layer.id === BASEMAP_ID) + 1]?.id;
-      map.removeLayer(BASEMAP_ID);
-      map.removeSource("sdfi");
-      map.addSource("osm", OSM_SOURCE);
-      map.addLayer({ id: BASEMAP_ID, type: "raster", source: "osm", paint: basemapPaint() }, above);
-    };
-    // an error can arrive before the style has finished loading
-    if (map.isStyleLoaded()) swap();
-    else void map.once("idle", swap);
+    const message = String(e?.error?.message ?? "");
+    if (e?.sourceId === VECTOR_SOURCE_ID || (!e?.sourceId && /openfreemap/i.test(message))) {
+      if (vectorArrived || !map.getSource(VECTOR_SOURCE_ID)) return;
+      console.warn("Vector basemap unavailable — falling back to a raster map", e?.error);
+      map.off("sourcedata", onData);
+      whenReady(() => {
+        if (map.getSource(VECTOR_SOURCE_ID)) useRaster(map, rasterSource());
+      });
+      return;
+    }
+    const decodeError = /could not be decoded/i.test(message);
+    if ((e?.sourceId === "sdfi" || decodeError) && map.getSource("sdfi")) {
+      console.warn("SDFI basemap unavailable — falling back to OpenStreetMap", e?.error);
+      whenReady(() => {
+        if (map.getSource("sdfi")) useRaster(map, { id: "osm", spec: OSM_SOURCE });
+      });
+    }
   };
   map.on("error", onError);
 }
@@ -204,7 +272,7 @@ export async function createMap(
   map.addControl(geolocate, "top-right");
   map.addControl(new maplibregl.ScaleControl({ unit: "metric" }));
 
-  fallBackToOsmOnError(map);
+  installFallbacks(map);
 
   const loaded = new Promise<MapLibreMap>((resolve) => {
     map.once("load", () => resolve(map));

@@ -5,6 +5,7 @@ import { aboutControl, openAbout, type AboutSection } from "./about";
 import { fitCamera } from "./camera";
 import { fitChipName, type ChipName } from "./chipname";
 import { loadForestOutlineFile, loadForests, loadManifest, loadSpecies } from "./data";
+import { showForestLabels } from "./forestlabels";
 import { initForestFinder } from "./forestfinder";
 import { ForestOutlines } from "./forestoutlines";
 import { createForestScores } from "./forestscores";
@@ -252,6 +253,7 @@ function buildPanel(manifestLoading: Promise<Manifest>): Promise<SpeciesPanel> {
       void loadForests(manifest.forests)
         .then((points) => {
           forestPoints = points;
+          onMap((map) => showForestLabels(map, points));
           // A pin dropped before the forests arrived can now be named after one.
           if (pinLngLat && !pinLabel) showLocation(pinLngLat, undefined);
           forestScores.refresh();
@@ -592,6 +594,7 @@ const forestFinder = initForestFinder({
     if (forestPoints !== points) {
       // (also after a first load that failed: the chip can now name the forest)
       forestPoints = points;
+      void mapReady.then(({ loaded }) => loaded.then((map) => showForestLabels(map, points)));
       if (pinLngLat && !pinLabel) showLocation(pinLngLat, undefined);
     }
     return points;

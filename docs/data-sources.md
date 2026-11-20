@@ -12,7 +12,8 @@ Nothing gets built on a source until its row here is complete.
 | DMI Open Data — Climate Data API | `https://opendataapi.dmi.dk/v2/climateData/` | none since 2025-12-02 | **verified** |
 | Den Danske Rødliste — DCE / Aarhus University | `https://api.redlist.au.dk/public/v1/summary/assessments/?vurderingsrunde=2019&speciesGroup=Svampe` | none | **wired — `pipeline.ingest.redlist` (loads `redlist`, guards target species)** |
 | Adressevælgeren — address search | `https://adressevaelger.dk/soeg` (phonetic search) + `.../husnumre/{id}` (lookup, coordinates in EPSG:25832) | API-Key (free) | **verified — wired in `web/src/addresses.ts`** (replaced DAWA, ADR-0015) |
-| Skærmkort basemap | Datafordeler WMS `https://wms.datafordeler.dk/Dkskaermkort/topo_skaermkort/1.0.0/wms`, layer `dtk_skaermkort` (EPSG:3857) | API-Key (free) | **verified — wired in `web/src/map.ts`** (replaced DAWA's `api.dataforsyningen.dk/topo_skaermkort_DAF`, ADR-0015) |
+| Basemap | OpenStreetMap data as vector tiles, `https://tiles.openfreemap.org/planet` (OpenMapTiles schema), fonts from the same host | none (free, no key) | **wired in `web/src/map.ts` + `basemapstyle.ts`** (ADR-0024) |
+| Skærmkort (fallback basemap) | Datafordeler WMS `https://wms.datafordeler.dk/Dkskaermkort/topo_skaermkort/1.0.0/wms`, layer `dtk_skaermkort` (EPSG:3857) | API-Key (free) | **verified — wired in `web/src/map.ts`** (replaced DAWA's `api.dataforsyningen.dk/topo_skaermkort_DAF`, ADR-0015) |
 | GeoDanmark Vektor (forest polygons, unnamed) | Datafordeler WMS `https://wms.datafordeler.dk/GeoDanmarkVektor/GeoDanmark_60_NOHIST/1.0.0/WMS`, layer `SKOV`, `GetFeatureInfo` point-probe (its WFS is currently down — 503 on every path tried) | OAuth Shared Secret (client_credentials, free) | **verified, built (`pipeline.ingest.geodanmark`), but superseded for "forests near me" by Danske Stednavne below (ADR-0014) — kept as an option for later comprehensive land-cover work** |
 | Danske Stednavne (named forests) | Datafordeler WFS `https://wfs.datafordeler.dk/Stednavn/STEDNAVNE_BEARBEJDET_GML3SFP/1/WFS`, feature type `sn:Naturareal`, `CQL_FILTER=naturarealtype='skovPlantage'` — **note: this WFS's `EPSG:4326` responses use lat,lon axis order**, the opposite of this codebase's `[lon, lat]` convention | OAuth Shared Secret (same as GeoDanmark; client_credentials, free) | **verified — wired in `pipeline.ingest.stednavne`, 5,795 named forests.** Register itself frozen since 2025-09 (not this session's finding — a standing upstream data freeze); irrelevant at forest-boundary timescales. |
 | CORINE Land Cover 2018 (forest type: broadleaf/coniferous/mixed) | EU/Copernicus via EEA's public ArcGIS REST, `https://image.discomap.eea.europa.eu/arcgis/rest/services/Corine/CLC2018_WM/MapServer/0/query`, `Code_18 IN ('311','312','313')` | none | **verified — wired in `pipeline.ingest.biotope`, advisory only (ADR-0016)** |
@@ -160,7 +161,8 @@ in our synonym list; non-core, to chase when the species set grows.
     Mycological Society"* + `CC BY-NC 4.0` link.
   - arter.dk: *"Datagrundlag: Arter – Miljøstyrelsen, Statens Naturhistoriske
     Museum / Licens CC-BY"* + credit any `Systemoprindelse` sub-sources.
-  - Basemap: *"Kort: GeoDanmark (CC BY 4.0), Datafordeler"* — `CC BY 4.0`
+  - Basemap: *"© OpenStreetMap · OpenMapTiles · OpenFreeMap"* — OSM data `ODbL`, attribution required
+  - Fallback basemap: *"Kort: GeoDanmark (CC BY 4.0), Datafordeler"* — `CC BY 4.0`
     (GeoDanmark), commercial use allowed. Shown in the MapLibre attribution
     control now; also needs an in-app **"Om data"** screen listing every source
     and licence (Dataforsyningen policy explicitly asks for this for apps).
