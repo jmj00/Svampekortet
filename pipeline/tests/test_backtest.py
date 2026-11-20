@@ -119,7 +119,11 @@ def test_backtest_runs_and_the_full_model_passes(backtest_db: Path, tmp_path: Pa
     assert kantarel["tier"] == "core"
     assert kantarel["passed"] is True
     wm, cr = kantarel["week_matched"], kantarel["calendar_random"]
-    # habitat alone is a strong spatial ranker; season/weather don't help there ...
+    # week_matched compares against habitat x seasonality (season is constant
+    # across places on a given day); calendar_random against habitat alone
+    assert wm["baseline"] == backtest.BASELINE_HABITAT_SEASONALITY
+    assert cr["baseline"] == backtest.BASELINE_HABITAT
+    # weather must not damage spatial ranking ...
     assert wm["auc_full"] >= wm["auc_baseline"] - backtest.WEEK_MATCHED_TOLERANCE
     # ... but do help once the date is free
     assert cr["auc_full"] >= cr["auc_baseline"] + backtest.CALENDAR_RANDOM_MARGIN

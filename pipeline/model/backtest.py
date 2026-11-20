@@ -6,13 +6,18 @@ study area are negatives, drawn under **two** date regimes:
 
 - ``week_matched``     -- negatives share the positives' weeks. Isolates the
                           *spatial* signal; the full model must merely not do
-                          materially worse than the habitat-only baseline
-                          (AUC >= baseline - WEEK_MATCHED_TOLERANCE).
+                          materially worse than the habitat x seasonality
+                          baseline (AUC >= baseline - WEEK_MATCHED_TOLERANCE).
+                          Seasonality is in that baseline because the map
+                          scores every place for the same day, so it cannot
+                          change spatial ranking; here it would only add the
+                          +-DATE_JITTER_DAYS noise (ADR-0023). What is left to
+                          test is whether weather (and host tree) hurt it.
 - ``calendar_random``  -- negative dates spread across the whole test-year
                           calendar, like a real user asking "is now good?" any
-                          month. The full model must beat the baseline here by
-                          CALENDAR_RANDOM_MARGIN -- this is where seasonality and
-                          weather earn their place.
+                          month. The full model must beat the habitat-only
+                          baseline here by CALENDAR_RANDOM_MARGIN -- this is
+                          where seasonality and weather earn their place.
 
 Both conditions must hold or the build fails. The gate is measured on the raw
 ``habitat x seasonality x weather x host_tree`` product; the displayed 0..100
@@ -79,7 +84,8 @@ DATE_JITTER_DAYS = 3  # week_matched negatives sit within this of a positive's d
 MIN_TEST_POSITIVES = 25  # below this the gate is skipped for that species
 SEED = 20260902
 
-# How far below the habitat-only baseline the full model's week_matched AUC may
+# How far below its baseline (habitat x seasonality since ADR-0023; habitat
+# only before) the full model's week_matched AUC may
 # sit. Raised 0.03 -> 0.035 with ADR-0011: deduping the habitat KDE lifted the
 # baseline itself ~0.006, the full model's absolute week_matched AUC is
 # unchanged.
@@ -280,23 +286,34 @@ def _negative_samples(
     return negatives
 
 
+BASELINE_HABITAT = "habitat"
+BASELINE_HABITAT_SEASONALITY = "habitat_x_seasonality"
+
+
 def _evaluate(
-    model: SpeciesModel, positives: list[dict], negatives: list[dict]
+    model: SpeciesModel,
+    positives: list[dict],
+    negatives: list[dict],
+    *,
+    baseline: str = BASELINE_HABITAT,
 ) -> tuple[dict, list[float], list[int]]:
     raw_full: list[float] = []
     raw_base: list[float] = []
     labels: list[int] = []
     for label, points in ((1, positives), (0, negatives)):
         for p in points:
-            habitat, _s, _w, _h, raw = model.terms(
+            habitat, season, _w, _h, raw = model.terms(
                 p["lon"], p["lat"], p["doy"], p["weather"], p.get("effort"), p.get("site")
             )
             raw_full.append(raw)
-            raw_base.append(habitat)
+            raw_base.append(
+                habitat * season if baseline == BASELINE_HABITAT_SEASONALITY else habitat
+            )
             labels.append(label)
 
     k = max(1, len(positives))
     metrics = {
+        "baseline": baseline,
         "n_negatives": len(negatives),
         "auc_full": _r(roc_auc(raw_full, labels)),
         "auc_baseline": _r(roc_auc(raw_base, labels)),
@@ -419,6 +436,7 @@ def run(
                 _negative_samples(
                     con, cells, positives, rng, effort_grid, host_tree_grid, regime=WEEK_MATCHED
                 ),
+                baseline=BASELINE_HABITAT_SEASONALITY,
             )
             cal, _rc, _lc = _evaluate(
                 model,
