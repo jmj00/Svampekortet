@@ -80,47 +80,6 @@
       "shown_on": [
         "morchella-esculenta"
       ]
-    },
-    {
-      "slug": "inosperma-erubescens",
-      "danish_name": "Giftig Trævlhat",
-      "scientific_name": "Inosperma erubescens",
-      "gbif_usage_key": 10776858,
-      "synonyms": [
-        "Inocybe erubescens",
-        "Inocybe patouillardii"
-      ],
-      "text": "Hvidlig til halmfarvet hat, der først er kegleformet og senere udbredt med en puk, trævlet og revnende i kanten. Hele svampen bliver teglrød, hvor den er rørt eller ældes. Lamellerne er gråhvide og bliver brunlige. Under løvtræ, gerne bøg, i skovbryn og parker på kalkrig bund i juni og juli – samtidig med de sidste vårmusseroner. Kan være dødeligt giftig.",
-      "shown_on": [
-        "calocybe-gambosa"
-      ]
-    },
-    {
-      "slug": "entoloma-sinuatum",
-      "danish_name": "Giftig Rødblad",
-      "scientific_name": "Entoloma sinuatum",
-      "gbif_usage_key": 2539308,
-      "synonyms": [
-        "Entoloma lividum"
-      ],
-      "text": "Stor, kødfuld svamp med bleggrå til gråbrun, glat hat og lameller, der først er gullige og senere bliver lyserøde. Stokken er hvid, uden violette toner. Lugter af mel. Under eg og bøg og i parker fra august til oktober. Giftig: giver kraftig maveforgiftning.",
-      "shown_on": [
-        "lepista-saeva"
-      ]
-    },
-    {
-      "slug": "clitocybe-rivulosa",
-      "danish_name": "Eng-Tragthat",
-      "scientific_name": "Clitocybe rivulosa",
-      "gbif_usage_key": 2531052,
-      "synonyms": [
-        "Clitocybe dealbata",
-        "Collybia rivulosa"
-      ],
-      "text": "Lille, hvidlig til gråhvid svamp med flad til let nedtrykt, ofte rimet hat og tætte, lidt nedløbende lameller. Vokser i græs på plæner, enge og i parker, tit i ringe, fra august til november. Meget giftig.",
-      "shown_on": [
-        "lepista-saeva"
-      ]
     }
   ]
 }
