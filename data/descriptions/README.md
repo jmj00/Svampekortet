@@ -44,6 +44,18 @@ Puffball files lead with the mandatory cut-open white-flesh check.
 
 All 50 published species are **self-checked**; 0 are **expert**.
 
+The three hekseringshatte added 2026-11-20 (`lepista-nuda`, `lepista-sordida`,
+`lepista-saeva`) went through the same checks when they were written: every
+lookalike named takes its archive name (Lysviolet Slørhat, Mørkviolet Slørhat,
+Violet Ametysthat, Giftig Rødblad, Eng-Tragthat; genera slørhat, trævlhat), and
+each season matches the month distribution of the species' archive finds
+(nuda Sep–Dec, peak Oct–Nov; sordida Sep–Nov, peak Oct; saeva Oct–Dec, peak
+Nov; all three have January finds in mild winters). `calocybe-gambosa`
+(Vårmusseron, same day) likewise: Giftig Trævlhat is the archive's name for
+*Inosperma erubescens* (formerly *Inocybe*), with Snehvid Fluesvamp and Flammet
+Rødblad; season April–June, peak May (1,285 of 2,046 finds), and Giftig Trævlhat's
+own finds start in June.
+
 ### Flagged for the reviewer
 
 | slug | flag |
@@ -52,6 +64,8 @@ All 50 published species are **self-checked**; 0 are **expert**.
 | `hydnum-repandum` | mentions *Hydnum rufescens* ("Rødgul Pigsvamp", archive-confirmed) as a harmless lookalike; that species is not itself in the app |
 | `apioperdon-pyriforme` etc. | "kartoffelbovist" was changed to the archive form "bruskbold" — confirm that's the term you want in a beginner safety line |
 | `cantharellus-cibarius`, `cerioporus-squamosus`, `craterellus-tubaeformis` | season phrasing is a little off the record peak (a few weeks early or late) — kept as written; tighten if you like |
+| `lepista-*` | all three say "varmebehandles grundigt" (raw or undercooked hekseringshat can upset the stomach); `lepista-sordida` is marked `lookalike_risk: "high"` and "ikke et godt valg for begyndere" because of the toxic trævlhatte in the same habitat — confirm both; the photos were pulled by iNaturalist's name *Collybia* and are `reviewed: false` |
+| `calocybe-gambosa` | marked `lookalike_risk: "high"` because Giftig Trævlhat shares its habitat and overlaps in June — confirm; check the description of Giftig Trævlhat (cone-shaped fibrous cap, reddening) and the advice to dig up the base for Snehvid Fluesvamp |
 | *(all)* | every edibility claim, cap-size range, and "no toxic lookalike" line still needs an expert eye — these are the safety-critical lines and were not verifiable against a structured source |
 
 When a species is expert-reviewed, note it in this file (and, if we later add a

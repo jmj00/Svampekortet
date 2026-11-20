@@ -77,6 +77,33 @@ def test_classify_keeps_and_rejects_the_right_rows(tiny_dwca: Path):
     assert reasons["SA:10"] == "no coordinates"
 
 
+def _record(name: str, rank: str) -> dict[str, str]:
+    return {
+        "occurrenceID": "SA:sl",
+        "scientificName": name,
+        "taxonRank": rank,
+        "eventDate": "2023-10-12",
+        "decimalLatitude": "56.1",
+        "decimalLongitude": "9.5",
+        "coordinateUncertaintyInMeters": "50",
+        "license": "LIC",
+        "recordedBy": "Ida",
+        "informationWithheld": "",
+    }
+
+
+def test_sensu_lato_records_count_only_for_species_that_opt_in():
+    # Svampeatlas files most Lepista sordida finds as the broad group
+    kept, reason = classify(_record("Lepista sordida sensu lato ", "superspecies"))
+    assert reason == "" and kept is not None
+    assert kept.scientific_name == "Lepista sordida"
+    # every other species still keeps species rank only
+    kept, reason = classify(_record("Boletus edulis sensu lato", "superspecies"))
+    assert kept is None and reason == "rank 'superspecies'"
+    kept, reason = classify(_record("Lepista sordida var. lilacea", "var."))
+    assert kept is None and reason == "rank 'var.'"
+
+
 def test_run_loads_duckdb_and_reports(tiny_dwca: Path, tmp_path: Path):
     db_path = tmp_path / "out.duckdb"
     report = run(tiny_dwca, db_path)

@@ -143,6 +143,54 @@ describe("resolveQuery", () => {
     expect(slugs(resolveQuery("lactarius", manifest))).toEqual(["granmk"]);
   });
 
+  it("maps hekseringshat words to the hekseringshat group", () => {
+    const withLepista: Manifest = {
+      ...manifest,
+      species: [
+        ...manifest.species,
+        summary({
+          slug: "violet",
+          danish_name: "Violet Hekseringshat",
+          scientific_name: "Lepista nuda",
+          group: "hekseringshat",
+          tier: "extra",
+          score_validated: false,
+        }),
+        summary({
+          slug: "bleg",
+          danish_name: "Bleg Hekseringshat",
+          scientific_name: "Lepista saeva",
+          group: "hekseringshat",
+          tier: "extra",
+          score_validated: false,
+        }),
+      ],
+    };
+    expect(slugs(resolveQuery("hekseringshatte", withLepista))).toEqual(["bleg", "violet"]);
+    expect(slugs(resolveQuery("lepista", withLepista))).toEqual(["bleg", "violet"]);
+    expect(slugs(resolveQuery("violet hekseringshat", withLepista))).toEqual(["violet"]);
+  });
+
+  it("maps musseron words to the musseron group", () => {
+    const withMusseron: Manifest = {
+      ...manifest,
+      species: [
+        ...manifest.species,
+        summary({
+          slug: "vaarmus",
+          danish_name: "Vårmusseron",
+          scientific_name: "Calocybe gambosa",
+          group: "musseron",
+          tier: "extra",
+          score_validated: false,
+        }),
+      ],
+    };
+    expect(slugs(resolveQuery("musseroner", withMusseron))).toEqual(["vaarmus"]);
+    expect(slugs(resolveQuery("calocybe", withMusseron))).toEqual(["vaarmus"]);
+    expect(slugs(resolveQuery("varmusseron", withMusseron))).toEqual(["vaarmus"]);
+  });
+
   it("treats 'spiselige' as everything (all MVP species are edible)", () => {
     expect(resolveQuery("spiselige", manifest)).toHaveLength(9);
   });

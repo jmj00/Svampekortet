@@ -31,8 +31,12 @@ SPECIES_PY = Path(__file__).resolve().parent.parent / "pipeline" / "species.py"
 
 
 def _norm(name: str) -> str:
-    """Lower-case, trim, collapse runs of space/hyphen to a single space."""
-    return re.sub(r"[\s-]+", " ", name.strip().lower())
+    """Lower-case, trim, collapse runs of space/hyphen to a single space, and drop
+    a trailing "i bred forstand" (sensu lato): the archive names e.g. Lepista
+    sordida "spinkel hekseringshat i bred forstand", and the app shows the name
+    without the taxonomic qualifier."""
+    norm = re.sub(r"[\s-]+", " ", name.strip().lower())
+    return re.sub(r" i bred forstand$", "", norm)
 
 
 def scan(archive_path: Path) -> dict[str, Counter[str]]:

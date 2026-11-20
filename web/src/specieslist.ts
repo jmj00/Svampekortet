@@ -40,6 +40,8 @@ const GROUP_LABELS: Record<string, string> = {
   stoevbold: "Støvbolde",
   morkel: "Morkler",
   maelkehat: "Mælkehatte",
+  hekseringshat: "Hekseringshatte",
+  musseron: "Musseroner",
 };
 /** Groups with fewer species than this share one "Andre" chip. */
 const MIN_SPECIES_FOR_OWN_CHIP = 4;

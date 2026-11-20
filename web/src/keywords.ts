@@ -51,6 +51,8 @@ const GROUP_WORDS: { pattern: RegExp; group: string }[] = [
   { pattern: /^stovbold(e|ene)?$/, group: "stoevbold" },
   { pattern: /^mork(el|ler|lerne)$/, group: "morkel" },
   { pattern: /^maelkehat(te|ten|tene)?$/, group: "maelkehat" },
+  { pattern: /^hekseringshat(te|ten|tene)?$/, group: "hekseringshat" },
+  { pattern: /^musseron(er|en|erne)?$/, group: "musseron" },
 ];
 
 // Looser keywords, tried only when the query is not (part of) a species name.
@@ -67,6 +69,8 @@ const RULES: { pattern: RegExp; keep: (s: SpeciesSummary) => boolean }[] = [
   { pattern: /stovbold|puffball|bovist|lycoperdon/, keep: (s) => s.group === "stoevbold" },
   { pattern: /morkel|morel|morchella/, keep: (s) => s.group === "morkel" },
   { pattern: /maelkehat|lactarius|milkcap/, keep: (s) => s.group === "maelkehat" },
+  { pattern: /heksering|lepista|blewit/, keep: (s) => s.group === "hekseringshat" },
+  { pattern: /musseron|calocybe|st george/, keep: (s) => s.group === "musseron" },
   // Every published species is edible. "svamp" counts only as a word of its
   // own, so it does not swallow an unknown or mistyped "...svamp" name.
   { pattern: /\bspiselig|\bedible|\bsvampe?(ne)?\b/, keep: () => true },
