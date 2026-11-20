@@ -125,7 +125,7 @@ const FOREST_LIGHT: ForestRamp = {
     { from: 60, label: "60–79", color: "#27866d", opacity: 0.8, line: "#14594a" },
     { from: 80, label: "80+", color: "#083f35", opacity: 0.8, line: "#04241e" },
   ],
-  backing: "#cfe3c4",
+  backing: "#add19e", // basemapstyle.ts LIGHT.wood
 };
 
 const FOREST_DARK: ForestRamp = {
@@ -135,7 +135,7 @@ const FOREST_DARK: ForestRamp = {
     { from: 60, label: "60–79", color: "#4fb096", opacity: 0.82, line: "#8fdcc6" },
     { from: 80, label: "80+", color: "#b9f7e3", opacity: 0.88, line: "#eafff8" },
   ],
-  backing: "#3c4a3c",
+  backing: "#22372a", // basemapstyle.ts DARK.wood
 };
 
 export function forestRamp(): ForestRamp {

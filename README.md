@@ -4,7 +4,7 @@ A mobile-first map for Danish mushroom foraging: where an edible species has bee
 recorded before in Denmark, and how favourable current conditions are for looking
 now. Danish-only, anonymous, read-only. Built on open data from Svampeatlas /
 Atlas of Danish Fungi, DMI and the Danish Red List (DCE / Aarhus University), on
-an OpenStreetMap or SDFI basemap.
+an OpenStreetMap basemap (vector tiles from OpenFreeMap).
 
 > **Not an identification tool.** The app never asserts a mushroom is safe to eat.
 > It shows where a *named* species has been observed and a 0–100 *conditions

@@ -73,7 +73,10 @@ ATTRIBUTION = {
         "Atlas of Danish Fungi / Danmarks Svampeatlas, Danish Mycological Society (CC BY-NC 4.0)"
     ),
     "weather": "DMI – Frie Data",
-    "basemap": "GeoDanmark / Klimadatastyrelsen (CC BY 4.0), Datafordeler",
+    "basemap": (
+        "© OpenStreetMap-bidragydere (ODbL), vektorkort fra OpenMapTiles via OpenFreeMap; "
+        "reservekort: GeoDanmark / Klimadatastyrelsen (CC BY 4.0), Datafordeler"
+    ),
     "redlist": "Den Danske Rødliste, DCE / Aarhus Universitet (2019)",
     "photos": "Fotos fra iNaturalist-fund (CC BY 4.0 / CC0) – se det enkelte billede",
     "forests": "Danske Stednavne, Klimadatastyrelsen (CC BY 4.0)",

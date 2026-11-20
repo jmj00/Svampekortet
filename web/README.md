@@ -143,9 +143,11 @@ ever needs a hard reset.
 
 ## Basemap and address search
 
-Both work out of the box in a reduced form: the map falls back to OpenStreetMap
-tiles, and the address search box returns nothing. For the real "Skærmkort"
-basemap and address search (Adressevælgeren), copy `.env.example` to
+The basemap needs no key: OpenStreetMap data as vector tiles from OpenFreeMap,
+drawn with our own style (`src/basemapstyle.ts`, ADR-0024). If OpenFreeMap
+fails it falls back to Skærmkort with a key, else to OpenStreetMap's raster
+tiles. Address search returns nothing without a key. For the Skærmkort fallback
+and address search (Adressevælgeren), copy `.env.example` to
 `.env.local` and set `VITE_DATAFORDELER_API_KEY` — a plain API-Key (not an
 OAuth Shared Secret) from an IT-system in Datafordeler Administration
 (<https://portal.datafordeler.dk/hjem>).
