@@ -6,7 +6,9 @@
       "danish_name": "Satans Rørhat",
       "scientific_name": "Rubroboletus satanas",
       "gbif_usage_key": 7722553,
-      "synonyms": ["Boletus satanas"],
+      "synonyms": [
+        "Boletus satanas"
+      ],
       "text": "Stor, kraftig rørhat med kridhvid til lysegrå hat, blod- til orangerøde porer og en tyk, kugleformet stok med rødt net. Kødet blåner svagt, og ældre eksemplarer lugter ubehageligt. Fåtallig i Danmark, under bøg og eg på kalkrig bund fra juli til oktober. Giftig: giver voldsomme opkastninger og diarré.",
       "shown_on": [
         "boletus-edulis",
@@ -24,7 +26,10 @@
       "danish_name": "Djævle-Rørhat",
       "scientific_name": "Rubroboletus legaliae",
       "gbif_usage_key": 8301598,
-      "synonyms": ["Boletus legaliae", "Boletus splendidus"],
+      "synonyms": [
+        "Boletus legaliae",
+        "Boletus splendidus"
+      ],
       "text": "Ligner Satans Rørhat, men hatten er lys med en rosa til rødlig tone, især mod randen, og kødet blåner tydeligere. Røde porer og rødt net på stokken. Sjælden, under bøg og eg på kalkrig bund fra juli til oktober. Giftig.",
       "shown_on": [
         "boletus-edulis",
@@ -35,6 +40,86 @@
         "xerocomellus-cisalpinus",
         "xerocomus-subtomentosus",
         "hortiboletus-rubellus"
+      ]
+    },
+    {
+      "slug": "amanita-phalloides",
+      "danish_name": "Grøn Fluesvamp",
+      "scientific_name": "Amanita phalloides",
+      "gbif_usage_key": 5240325,
+      "synonyms": [],
+      "text": "Som ung sidder den gemt i en hvid skede og ligner et lille hvidt æg – eller en støvbold. Skåret igennem på langs ses omridset af hat, lameller og stok indeni; en ung støvbold er ensartet hvid hele vejen igennem. Udvokset har den olivengrøn til gullig hat, hvide lameller, ring og en knold i en hvid skede. Under eg og bøg fra august til oktober. Dødeligt giftig.",
+      "shown_on": [
+        "lycoperdon-perlatum",
+        "apioperdon-pyriforme",
+        "lycoperdon-utriforme",
+        "calvatia-gigantea"
+      ]
+    },
+    {
+      "slug": "scleroderma-citrinum",
+      "danish_name": "Almindelig Bruskbold",
+      "scientific_name": "Scleroderma citrinum",
+      "gbif_usage_key": 5239982,
+      "synonyms": [],
+      "text": "Gullig til okkerbrun kugle uden stok, med en tyk, hård skal, der revner op i skæl. Skåret igennem er den tidligt lilla- til gråsort indeni med hvide årer – aldrig ensartet hvid som en ung, spiselig støvbold. Meget almindelig på sur bund ved birk, eg og fyr fra juli til oktober. Giftig: giver maveforgiftning.",
+      "shown_on": [
+        "lycoperdon-perlatum",
+        "apioperdon-pyriforme",
+        "lycoperdon-utriforme",
+        "calvatia-gigantea"
+      ]
+    },
+    {
+      "slug": "gyromitra-esculenta",
+      "danish_name": "Ægte Stenmorkel",
+      "scientific_name": "Gyromitra esculenta",
+      "gbif_usage_key": 5258510,
+      "synonyms": [],
+      "text": "Hovedet er rødbrunt til mørkebrunt og foldet som en hjerne – ikke delt i gruber som en bikage. Skåret igennem er hoved og stok fyldt med uregelmæssige kamre, hvor en morkel er hul hele vejen. Vokser i fyrreskov på sandet bund, gerne ved stubbe og nyfældede træer, fra marts til maj. Giftig, også efter kogning: kan give alvorlige skader på lever og nervesystem.",
+      "shown_on": [
+        "morchella-esculenta"
+      ]
+    },
+    {
+      "slug": "inosperma-erubescens",
+      "danish_name": "Giftig Trævlhat",
+      "scientific_name": "Inosperma erubescens",
+      "gbif_usage_key": 10776858,
+      "synonyms": [
+        "Inocybe erubescens",
+        "Inocybe patouillardii"
+      ],
+      "text": "Hvidlig til halmfarvet hat, der først er kegleformet og senere udbredt med en puk, trævlet og revnende i kanten. Hele svampen bliver teglrød, hvor den er rørt eller ældes. Lamellerne er gråhvide og bliver brunlige. Under løvtræ, gerne bøg, i skovbryn og parker på kalkrig bund i juni og juli – samtidig med de sidste vårmusseroner. Kan være dødeligt giftig.",
+      "shown_on": [
+        "calocybe-gambosa"
+      ]
+    },
+    {
+      "slug": "entoloma-sinuatum",
+      "danish_name": "Giftig Rødblad",
+      "scientific_name": "Entoloma sinuatum",
+      "gbif_usage_key": 2539308,
+      "synonyms": [
+        "Entoloma lividum"
+      ],
+      "text": "Stor, kødfuld svamp med bleggrå til gråbrun, glat hat og lameller, der først er gullige og senere bliver lyserøde. Stokken er hvid, uden violette toner. Lugter af mel. Under eg og bøg og i parker fra august til oktober. Giftig: giver kraftig maveforgiftning.",
+      "shown_on": [
+        "lepista-saeva"
+      ]
+    },
+    {
+      "slug": "clitocybe-rivulosa",
+      "danish_name": "Eng-Tragthat",
+      "scientific_name": "Clitocybe rivulosa",
+      "gbif_usage_key": 2531052,
+      "synonyms": [
+        "Clitocybe dealbata",
+        "Collybia rivulosa"
+      ],
+      "text": "Lille, hvidlig til gråhvid svamp med flad til let nedtrykt, ofte rimet hat og tætte, lidt nedløbende lameller. Vokser i græs på plæner, enge og i parker, tit i ringe, fra august til november. Meget giftig.",
+      "shown_on": [
+        "lepista-saeva"
       ]
     }
   ]
