@@ -9,6 +9,7 @@ review can diff. Every image is written with `reviewed: false`.
 
     python scripts/pull_species_images.py            # all core species
     python scripts/pull_species_images.py boletus-edulis
+    python scripts/pull_species_images.py --lookalikes   # data/lookalikes.json
 
 This is a content-authoring tool, not part of the pipeline. Re-run only to seed or
 extend the shortlist; edits after review stay in git.
@@ -21,6 +22,7 @@ import sys
 
 from pipeline.config import DESCRIPTIONS_DIR
 from pipeline.http import get_json
+from pipeline.lookalikes import Lookalike, load_lookalikes
 from pipeline.species import Species, published_species
 
 INAT_RG_DATASET = "50c9509d-22c7-4a22-a47d-8c48425ef4a7"
@@ -35,12 +37,12 @@ LICENCE_LABEL = {
 }
 
 
-def _slug(species: Species) -> str:
+def _slug(species: Species | Lookalike) -> str:
     return species["scientific_name"].lower().replace(" ", "-")
 
 
 def _search(
-    species: Species, *, country: str | None, verbatim_name: str | None = None
+    species: Species | Lookalike, *, country: str | None, verbatim_name: str | None = None
 ) -> list[dict]:
     params = {
         "datasetKey": INAT_RG_DATASET,
@@ -83,7 +85,7 @@ def _search(
     return picked
 
 
-def candidate_images(species: Species) -> list[dict]:
+def candidate_images(species: Species | Lookalike) -> list[dict]:
     """Prefer Danish photos; fall back to worldwide for species with too few CC0 /
     CC BY iNaturalist records in Denmark. These are the same species across
     northern Europe, and every image is `reviewed: false` for a later check.
@@ -112,8 +114,11 @@ def candidate_images(species: Species) -> list[dict]:
 
 def main() -> None:
     IMAGES_DIR.mkdir(parents=True, exist_ok=True)
-    wanted = set(sys.argv[1:])
-    for species in published_species():
+    args = sys.argv[1:]
+    # --lookalikes: the poisonous lookalikes in data/lookalikes.json instead
+    pool = load_lookalikes() if "--lookalikes" in args else published_species()
+    wanted = {a for a in args if not a.startswith("--")}
+    for species in pool:
         slug = _slug(species)
         if wanted and slug not in wanted:
             continue
