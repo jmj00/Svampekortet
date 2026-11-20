@@ -18,6 +18,8 @@ def test_species_shape():
             "stoevbold",
             "morkel",
             "maelkehat",
+            "hekseringshat",
+            "musseron",
         }, s
         assert s["tier"] in TIERS, s
         assert s["scientific_name"] not in seen, f"duplicate {s['scientific_name']}"

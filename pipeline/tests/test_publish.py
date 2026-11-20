@@ -13,12 +13,12 @@ def test_publish_writes_manifest_and_species_files(ingested_db: Path, tmp_path: 
     out = tmp_path / "publish"
     report = run(ingested_db, out)
 
-    assert report["species"] == 50  # 28 core + 22 extra
+    assert report["species"] == 54  # 28 core + 26 extra
     assert report["observations"] == 3  # SA:1, SA:2, SA:9
-    assert report["files"] == 51  # manifest + 50 species
+    assert report["files"] == 55  # manifest + 54 species
 
     manifest = json.loads((out / "manifest.json").read_text(encoding="utf-8"))
-    assert len(manifest["species"]) == 50
+    assert len(manifest["species"]) == 54
     assert {s["tier"] for s in manifest["species"]} == {"core", "extra"}
     assert all(s["score_validated"] == (s["tier"] == "core") for s in manifest["species"])
     assert manifest["bbox"] == list(DENMARK_BBOX)

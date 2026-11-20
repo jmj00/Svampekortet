@@ -43,6 +43,14 @@ from pipeline.config import DATA_DIR
 
 SCOPE_FILE = DATA_DIR / "species_scope.json"
 
+# Species whose Svampeatlas records at rank "superspecies" (sensu lato, the
+# broad species group) count as finds of the species. The ingest otherwise keeps
+# species rank only. Svampeatlas files 694 of its 719 Lepista sordida finds as
+# "Lepista sordida sensu lato" ("spinkel hekseringshat i bred forstand"), which
+# is what a forager means by the name; without them the species is too thin to
+# fit. Opt in per species, so no other species' data changes.
+SENSU_LATO_SPECIES: frozenset[str] = frozenset({"Lepista sordida"})
+
 
 class Species(TypedDict):
     danish_name: str
@@ -691,6 +699,74 @@ TARGET_SPECIES: list[Species] = [
         "gbif_usage_key": 5248728,
         "notes": "Deliciosus-group milkcap under pine; carrot-orange milk, blue-green "
         "zones on the cap, flesh greens. No toxic lookalike has orange milk.",
+    },
+    {
+        "danish_name": "Violet Hekseringshat",
+        "danish_name_verified": True,
+        "scientific_name": "Lepista nuda",
+        "synonyms": ["Clitocybe nuda", "Collybia nuda", "Rhodopaxillus nudus"],
+        "group": "hekseringshat",
+        "edible": True,
+        "lookalike_risk": "medium",  # violet slørhatte (Cortinarius): rust-brown spores, veil
+        "tier": "extra",
+        "gbif_usage_key": 5242048,
+        "notes": "Litter saprotroph in woods, gardens and compost, often in rings; "
+        "late autumn into a mild winter. Pale pink spore print. Cook thoroughly.",
+    },
+    {
+        "danish_name": "Spinkel Hekseringshat",
+        # The archive mostly says "spinkel hekseringshat i bred forstand" (sensu
+        # lato); the qualifier is dropped here, as verify_danish_names does.
+        "danish_name_verified": True,
+        "scientific_name": "Lepista sordida",
+        "synonyms": ["Clitocybe sordida", "Collybia sordida"],
+        "group": "hekseringshat",
+        "edible": True,
+        # small and thin-fleshed: easier to confuse with toxic trævlhatte (Inocybe)
+        # and small slørhatte than its larger relatives
+        "lookalike_risk": "high",
+        "tier": "extra",
+        "gbif_usage_key": 5242097,
+        "notes": "Small, thin-fleshed lilac Lepista of rich, disturbed soil: gardens, "
+        "compost, nettle beds, roadsides. Cook thoroughly.",
+    },
+    {
+        "danish_name": "Bleg Hekseringshat",
+        "danish_name_verified": True,
+        "scientific_name": "Lepista saeva",
+        "synonyms": [
+            "Lepista personata",
+            "Collybia personata",  # iNaturalist's name
+            "Clitocybe saeva",
+            "Tricholoma personatum",
+        ],
+        "group": "hekseringshat",
+        "edible": True,
+        # Giftig Rødblad (Entoloma sinuatum) and white grassland tragthatte
+        # (Clitocybe rivulosa) share its meadows; the violet stem is the check
+        "lookalike_risk": "medium",
+        "tier": "extra",
+        # GBIF's backbone treats L. saeva as a synonym of L. personata; the
+        # accepted key finds its occurrences and photos under either name
+        "gbif_usage_key": 5242070,
+        "notes": "Grassland Lepista: pale clay-coloured cap, stout stem streaked "
+        "violet. Meadows, pastures and parks, often in rings; late autumn.",
+    },
+    {
+        "danish_name": "Vårmusseron",
+        "danish_name_verified": True,
+        "scientific_name": "Calocybe gambosa",
+        "synonyms": ["Tricholoma gambosum", "Lyophyllum gambosum", "Tricholoma georgii"],
+        "group": "musseron",
+        "edible": True,
+        # Giftig Trævlhat (Inosperma erubescens) is white too, grows in the same
+        # parks and verges and overlaps it in June; it can kill
+        "lookalike_risk": "high",
+        "tier": "extra",
+        "gbif_usage_key": 8936224,
+        "notes": "The spring mushroom: April-June, peak May. White, fleshy, strong "
+        "smell of fresh flour, white spore print; grassland, verges, hedges, often "
+        "in rings.",
     },
     {
         "danish_name": "Gul Indigorørhat",

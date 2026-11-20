@@ -39,14 +39,19 @@ def _slug(species: Species) -> str:
     return species["scientific_name"].lower().replace(" ", "-")
 
 
-def _search(species: Species, *, country: str | None) -> list[dict]:
+def _search(
+    species: Species, *, country: str | None, verbatim_name: str | None = None
+) -> list[dict]:
     params = {
         "datasetKey": INAT_RG_DATASET,
-        "taxonKey": species["gbif_usage_key"],
         "mediaType": "StillImage",
         "license": CC_LICENSES,
         "limit": POOL,
     }
+    if verbatim_name:
+        params["verbatimScientificName"] = verbatim_name
+    else:
+        params["taxonKey"] = species["gbif_usage_key"]
     if country:
         params["country"] = country
     results = get_json("https://api.gbif.org/v1/occurrence/search", params).get("results", [])
@@ -81,11 +86,27 @@ def _search(species: Species, *, country: str | None) -> list[dict]:
 def candidate_images(species: Species) -> list[dict]:
     """Prefer Danish photos; fall back to worldwide for species with too few CC0 /
     CC BY iNaturalist records in Denmark. These are the same species across
-    northern Europe, and every image is `reviewed: false` for a later check."""
-    picked = _search(species, country="DK")
-    if len(picked) < PER_SPECIES:
-        seen = {img["url"] for img in picked}
-        picked += [img for img in _search(species, country=None) if img["url"] not in seen]
+    northern Europe, and every image is `reviewed: false` for a later check.
+
+    When the GBIF key finds too few, search by the name iNaturalist wrote on the
+    record (the species name, then each synonym). iNaturalist files the Lepista
+    species under Collybia, and GBIF's backbone matches "Collybia nuda" only to
+    the genus and "Collybia personata" to an unrelated species, so the key alone
+    finds none of their photos."""
+    searches: list[dict] = [{}]
+    searches += [
+        {"verbatim_name": name} for name in [species["scientific_name"], *species["synonyms"]]
+    ]
+    picked: list[dict] = []
+    seen: set[str] = set()
+    for search in searches:
+        for country in ("DK", None):
+            for img in _search(species, country=country, **search):
+                if img["url"] not in seen:
+                    seen.add(img["url"])
+                    picked.append(img)
+            if len(picked) >= PER_SPECIES:
+                return picked[:PER_SPECIES]
     return picked[:PER_SPECIES]
 
 

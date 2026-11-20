@@ -24,7 +24,7 @@ import duckdb
 from pipeline.config import DUCKDB_PATH, MAX_COORDINATE_UNCERTAINTY_M, in_denmark
 from pipeline.duckload import copy_rows
 from pipeline.dwca import DwcArchive
-from pipeline.species import TARGET_SPECIES, Species
+from pipeline.species import SENSU_LATO_SPECIES, TARGET_SPECIES, Species
 
 SOURCE = "svampeatlas"
 SPECIES_RANKS = {"sp.", "species"}
@@ -92,7 +92,8 @@ def classify(record: dict[str, str]) -> tuple[Observation | None, str]:
         return None, "not a target species"
 
     rank = (record.get("taxonRank") or "").strip().lower()
-    if rank and rank not in SPECIES_RANKS:
+    sensu_lato_ok = rank == "superspecies" and species["scientific_name"] in SENSU_LATO_SPECIES
+    if rank and rank not in SPECIES_RANKS and not sensu_lato_ok:
         return None, f"rank {rank!r}"
 
     if record.get("informationWithheld") or record.get("dataGeneralizations"):
