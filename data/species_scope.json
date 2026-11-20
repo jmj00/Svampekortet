@@ -1,3 +1,14 @@
 {
-  "excluded": []
+  "excluded": [
+    "bovista-nigrescens",
+    "bovista-plumbea",
+    "butyriboletus-appendiculatus",
+    "cerioporus-squamosus",
+    "fistulina-hepatica",
+    "laetiporus-sulphureus",
+    "lycoperdon-excipuliforme",
+    "meripilus-giganteus",
+    "tricholomopsis-rutilans",
+    "xerocomus-ferrugineus"
+  ]
 }

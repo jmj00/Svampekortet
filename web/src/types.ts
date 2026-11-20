@@ -62,6 +62,13 @@ export interface SpeciesImage {
   link: string | null;
 }
 
+export interface PoisonousLookalike {
+  danish_name: string;
+  scientific_name: string;
+  text: string;
+  images: SpeciesImage[];
+}
+
 export interface SpeciesDoc {
   slug: string;
   danish_name: string;
@@ -75,6 +82,9 @@ export interface SpeciesDoc {
   redlist_category: string | null;
   description: string | null;
   images: SpeciesImage[];
+  /** Poisonous species this one can be mistaken for (data/lookalikes.json).
+   * Optional: payloads published before it existed lack the field. */
+  poisonous_lookalikes?: PoisonousLookalike[];
   observation_count: number;
   season_by_month: number[];
   observations: ObservationPoint[];

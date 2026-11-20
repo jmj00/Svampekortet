@@ -545,6 +545,44 @@ function description(
   return { section, lookalikes };
 }
 
+/** "Giftige forvekslinger": poisonous species this one can be mistaken for,
+ * each with a photo, its names and how to tell it apart. */
+function poisonousLookalikes(doc: SpeciesDoc): HTMLElement | null {
+  const entries = doc.poisonous_lookalikes ?? [];
+  if (entries.length === 0) return null;
+  const section = el("section", "detail-poison");
+  section.append(
+    el("h3", "detail-section-title", "Giftige forvekslinger"),
+    el("p", "detail-poison__intro", `Giftige arter, der kan minde om ${doc.danish_name}.`),
+  );
+  const list = el("ul", "detail-poison__list");
+  for (const entry of entries) {
+    const item = el("li", "detail-poison__item");
+    const image = entry.images[0];
+    if (image) {
+      const figure = el("figure", "detail-poison__photo");
+      const img = el("img");
+      img.src = image.url;
+      img.alt = entry.danish_name;
+      img.loading = "lazy";
+      img.decoding = "async";
+      figure.append(img, el("figcaption", "detail-poison__credit"));
+      figure.lastElementChild?.append(...creditLine(image));
+      item.append(figure);
+    }
+    const name = el("p", "detail-poison__name");
+    name.append(
+      el("strong", undefined, entry.danish_name),
+      " ",
+      el("em", "detail-poison__sci", entry.scientific_name),
+    );
+    item.append(name, el("p", "detail-poison__text", entry.text));
+    list.append(item);
+  }
+  section.append(list);
+  return section;
+}
+
 /** A compact copy of the number on the photo, so the name and the score are
  * both in view the moment the page opens, however short the sheet is. It
  * mirrors whatever card is in `#conditions`. */
@@ -640,6 +678,8 @@ export function buildDetail(doc: SpeciesDoc, onBack: () => void, today = new Dat
   const seasonNode = season(doc, today);
   if (seasonNode) body.append(seasonNode);
   if (about) body.append(about.section);
+  const poison = poisonousLookalikes(doc);
+  if (poison) body.append(poison);
 
   return { nodes: [nav, body], back };
 }

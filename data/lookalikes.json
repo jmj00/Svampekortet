@@ -1,0 +1,41 @@
+{
+  "_comment": "Poisonous lookalikes shown as a 'Giftige forvekslinger' section on the species pages listed in shown_on. Not target species: no map, no score. Photos live in data/images/<slug>.json like a species' own. Names from the Svampeatlas archive; seasons from its dated Danish finds.",
+  "lookalikes": [
+    {
+      "slug": "rubroboletus-satanas",
+      "danish_name": "Satans Rørhat",
+      "scientific_name": "Rubroboletus satanas",
+      "gbif_usage_key": 7722553,
+      "synonyms": ["Boletus satanas"],
+      "text": "Stor, kraftig rørhat med kridhvid til lysegrå hat, blod- til orangerøde porer og en tyk, kugleformet stok med rødt net. Kødet blåner svagt, og ældre eksemplarer lugter ubehageligt. Fåtallig i Danmark, under bøg og eg på kalkrig bund fra juli til oktober. Giftig: giver voldsomme opkastninger og diarré.",
+      "shown_on": [
+        "boletus-edulis",
+        "boletus-reticulatus",
+        "boletus-pinophilus",
+        "xerocomellus-chrysenteron",
+        "xerocomellus-pruinatus",
+        "xerocomellus-cisalpinus",
+        "xerocomus-subtomentosus",
+        "hortiboletus-rubellus"
+      ]
+    },
+    {
+      "slug": "rubroboletus-legaliae",
+      "danish_name": "Djævle-Rørhat",
+      "scientific_name": "Rubroboletus legaliae",
+      "gbif_usage_key": 8301598,
+      "synonyms": ["Boletus legaliae", "Boletus splendidus"],
+      "text": "Ligner Satans Rørhat, men hatten er lys med en rosa til rødlig tone, især mod randen, og kødet blåner tydeligere. Røde porer og rødt net på stokken. Sjælden, under bøg og eg på kalkrig bund fra juli til oktober. Giftig.",
+      "shown_on": [
+        "boletus-edulis",
+        "boletus-reticulatus",
+        "boletus-pinophilus",
+        "xerocomellus-chrysenteron",
+        "xerocomellus-pruinatus",
+        "xerocomellus-cisalpinus",
+        "xerocomus-subtomentosus",
+        "hortiboletus-rubellus"
+      ]
+    }
+  ]
+}

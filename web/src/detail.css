@@ -1325,6 +1325,71 @@
   margin-top: 0;
 }
 
+/* --- "Giftige forvekslinger": poisonous lookalikes, a photo card each --- */
+.detail-poison {
+  max-width: 38rem;
+}
+
+.detail-poison__intro {
+  margin: 0 0 0.6rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.detail-poison__list {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.detail-poison__item {
+  overflow: hidden;
+  border: 2px solid var(--score-low);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--score-low) 12%, var(--surface));
+}
+
+.detail-poison__photo {
+  margin: 0;
+}
+
+.detail-poison__photo img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  background: var(--border);
+}
+
+.detail-poison__credit {
+  padding: 0.3rem 0.85rem 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+  overflow-wrap: anywhere;
+}
+
+.detail-poison__credit a {
+  color: inherit;
+}
+
+.detail-poison__name {
+  margin: 0.55rem 0.85rem 0.2rem;
+  font-size: 1rem;
+}
+
+.detail-poison__sci {
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.detail-poison__text {
+  margin: 0 0.85rem 0.85rem;
+  font-size: 0.93rem;
+  line-height: 1.55;
+}
+
 /* --- full-screen photo viewer (a modal <dialog> on <body>) --- */
 .photo-viewer {
   position: fixed;

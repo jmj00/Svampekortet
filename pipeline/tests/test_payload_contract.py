@@ -143,6 +143,7 @@ def test_species_doc_shape(payload: Path):
             "redlist_category",
             "description",
             "images",
+            "poisonous_lookalikes",
             "observation_count",
             "season_by_month",
             "observations",
@@ -162,6 +163,10 @@ def test_species_doc_shape(payload: Path):
             assert isinstance(point[2], int) and 1 <= point[2] <= 12
         for image in doc["images"]:
             assert set(image) == {"url", "credit", "license", "source", "link"}
+        for lookalike in doc["poisonous_lookalikes"]:  # PoisonousLookalike
+            assert set(lookalike) == {"danish_name", "scientific_name", "text", "images"}
+            for image in lookalike["images"]:
+                assert set(image) == {"url", "credit", "license", "source", "link"}
 
 
 # --------------------------------------------------------------------------- #

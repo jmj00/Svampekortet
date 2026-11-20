@@ -58,6 +58,7 @@ from pipeline.config import (
     PUBLISH_DIR,
 )
 from pipeline.forest_outlines import COORD_SCALE, encode_outline
+from pipeline.lookalikes import Lookalike, load_lookalikes, lookalikes_for
 from pipeline.species import published_species
 
 FORESTS_FILE = "forests.json"
@@ -103,6 +104,19 @@ def _images(slug: str) -> list[dict]:
             "link": img.get("observation_url"),
         }
         for img in json.loads(path.read_text(encoding="utf-8"))
+    ]
+
+
+def _poisonous_lookalikes(slug: str, lookalikes: list[Lookalike]) -> list[dict]:
+    """The 'Giftige forvekslinger' section of a species page (data/lookalikes.json)."""
+    return [
+        {
+            "danish_name": entry["danish_name"],
+            "scientific_name": entry["scientific_name"],
+            "text": entry["text"],
+            "images": _images(entry["slug"]),
+        }
+        for entry in lookalikes_for(slug, lookalikes)
     ]
 
 
@@ -298,6 +312,7 @@ def run(db_path: str | Path = DUCKDB_PATH, out_dir: str | Path = PUBLISH_DIR) ->
         has_forests = _table_exists(con, "named_forests")
 
         index: list[dict] = []
+        lookalikes = load_lookalikes()
         for species in published_species():
             sci = species["scientific_name"]
             slug = slugify(sci)
@@ -332,6 +347,7 @@ def run(db_path: str | Path = DUCKDB_PATH, out_dir: str | Path = PUBLISH_DIR) ->
                 "redlist_category": category,
                 "description": _description(slug),  # data/descriptions/<slug>.md
                 "images": images,
+                "poisonous_lookalikes": _poisonous_lookalikes(slug, lookalikes),
                 "observation_count": len(points),
                 "season_by_month": season,
                 "observations": [[lon, lat, month] for lon, lat, month in points],
