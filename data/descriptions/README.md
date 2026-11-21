@@ -79,8 +79,10 @@ From the review page (scope switches) and a written second opinion:
   Djævle-Rørhat (*R. legaliae*), from `data/lookalikes.json` (archive names;
   seasons from their Danish finds, July–October). Their photos were chosen by
   hand and are `reviewed: false`.
-- The second opinion mentions corrections written "undervejs", but the review
-  page holds no edited descriptions, so none could be applied.
+- The second opinion mentions corrections made "undervejs": these were the
+  corrections from the earlier rounds, all already applied. Nothing was lost.
+- **Tragt-Kantarel** (`craterellus-tubaeformis`): the expert confirmed the text
+  as it stands, season included; no further review needed.
 
 ### Flagged for the reviewer
 
@@ -88,7 +90,7 @@ From the review page (scope switches) and a written second opinion:
 | --- | --- |
 | `hydnum-repandum` | mentions *Hydnum rufescens* ("Rødgul Pigsvamp", archive-confirmed) as a harmless lookalike; that species is not itself in the app |
 | `apioperdon-pyriforme` etc. | "kartoffelbovist" was changed to the archive form "bruskbold" — confirm that's the term you want in a beginner safety line |
-| `cantharellus-cibarius`, `cerioporus-squamosus`, `craterellus-tubaeformis` | season phrasing is a little off the record peak (a few weeks early or late) — kept as written; tighten if you like |
+| `cantharellus-cibarius`, `cerioporus-squamosus` | season phrasing is a little off the record peak (a few weeks early or late) — kept as written; tighten if you like |
 | `lepista-*` | all three say "varmebehandles grundigt" (raw or undercooked hekseringshat can upset the stomach); `lepista-sordida` is marked `lookalike_risk: "high"` and "ikke et godt valg for begyndere" because of the toxic trævlhatte in the same habitat — confirm both; the photos were pulled by iNaturalist's name *Collybia* and are `reviewed: false` |
 | `calocybe-gambosa` | marked `lookalike_risk: "high"` because Giftig Trævlhat shares its habitat and overlaps in June — confirm; check the description of Giftig Trævlhat (cone-shaped fibrous cap, reddening) and the advice to dig up the base for Snehvid Fluesvamp |
 | `data/lookalikes.json` (round 2) | three more poisonous lookalikes: Grøn Fluesvamp (young egg, cut) and Almindelig Bruskbold on the four støvbolde; Ægte Stenmorkel on Spiselig Morkel. (Vårmusseron and Bleg Hekseringshat keep their lookalikes in the description only, by choice.) Archive names; seasons from their Danish finds. Check each text and that every photo (hand-picked, `reviewed: false`) shows the right species and the telling feature |
