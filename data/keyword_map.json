@@ -17,6 +17,8 @@
     "brungul slimrorhat": { "scientific_name": "Suillus luteus" },
     "broget slimrorhat": { "scientific_name": "Suillus variegatus" },
     "smorrorhat": { "scientific_name": "Suillus luteus" },
+    "punktstokket": { "scientific_name": "Neoboletus erythropus" },
+    "netstokket": { "scientific_name": "Suillellus luridus" },
     "spiselige svampe": { "filter": "edible" }
   }
 }

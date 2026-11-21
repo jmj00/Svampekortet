@@ -104,8 +104,9 @@ Craterellus tubaeformis 1510, Suillus luteus 1127, Suillus variegatus 621.
 Kept-record uncertainty p50 50 m / p90 250 m / p99 2.5 km. Data spans 1910–2026.
 The study area is now all of Denmark ([ADR-0010](adr/0010-expand-study-area-to-denmark.md)),
 so these counts rise on the next full build.
-*Neoboletus praestigiator* returns 0 — the archive files it under a name not yet
-in our synonym list; non-core, to chase when the species set grows.
+*Neoboletus praestigiator* returned 0: the archive files the species as
+*Neoboletus erythropus* (punktstokket indigorørhat), which is now the registry
+name (2026-11-21).
 
 ### arter.dk Darwin Core archive (`occurrence_dwc_archive.zip`) — 1,048,843 rows, 40 cols
 

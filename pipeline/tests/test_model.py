@@ -693,15 +693,15 @@ def test_fit_run_writes_manifest_and_species_files(observations_db: Path, tmp_pa
     report = fit_run(observations_db, out)
 
     assert report["step"] == "model"
-    assert report["species"] == 54  # 28 core + 26 extra
-    assert report["files"] == 55  # manifest + 54 (no weather_daily -> no current.json)
-    assert report["species_without_observations"] == 52  # only kantarel + Karl Johan have rows
+    assert report["species"] == 56  # 28 core + 28 extra
+    assert report["files"] == 57  # manifest + 56 (no weather_daily -> no current.json)
+    assert report["species_without_observations"] == 54  # only kantarel + Karl Johan have rows
     assert report["current_conditions"] is None
 
     manifest = json.loads((out / "model" / "manifest.json").read_text("utf-8"))
     assert manifest["terms"] == ["habitat", "seasonality", "weather", "host_tree"]
     assert manifest["current_conditions"] is None
-    assert len(manifest["species"]) == 54
+    assert len(manifest["species"]) == 56
 
     kantarel = json.loads((out / "model" / "cantharellus-cibarius.json").read_text("utf-8"))
     assert kantarel["slug"] == "cantharellus-cibarius"

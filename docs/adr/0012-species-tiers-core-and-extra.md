@@ -97,3 +97,9 @@ format, not the enum, drives the UI.
 - A high-`lookalike_risk` species may be `extra` by the type rules, but the
   spirit of ADR-0003's risk gate stands: nothing that needs experience to tell
   from a toxic twin goes in front of beginners. *Neoboletus* stays `hidden`.
+- *Update 2026-11-21:* the owner chose to publish the two indigorørhatte,
+  Punktstokket (*Neoboletus erythropus*) and Netstokket (*Suillellus luridus*),
+  as `extra` with `lookalike_risk: "high"`. The detail page's high-risk banner
+  ("Kun for erfarne") and the Satans Rørhat / Djævle-Rørhat lookalike section
+  carry the warning. The hidden *N. praestigiator* entry is gone; it was the same
+  species under a name the archive does not use.
