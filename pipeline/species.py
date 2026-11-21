@@ -769,16 +769,39 @@ TARGET_SPECIES: list[Species] = [
         "in rings.",
     },
     {
-        "danish_name": "Gul Indigorørhat",
+        "danish_name": "Punktstokket Indigorørhat",
         "danish_name_verified": True,
-        "scientific_name": "Neoboletus praestigiator",
-        "synonyms": ["Boletus luridiformis", "Neoboletus luridiformis", "Boletus erythropus"],
+        "scientific_name": "Neoboletus erythropus",
+        # The archive's name; GBIF also keeps N. luridiformis apart, but
+        # Svampeatlas files the species as N. erythropus. Its var.
+        # pseudosulphureus (gul indigorørhat) is not species rank, so it is
+        # not ingested.
+        "synonyms": ["Boletus erythropus", "Boletus luridiformis", "Neoboletus luridiformis"],
         "group": "rorhat",
         "edible": True,
-        "lookalike_risk": "high",  # instant blue bruising; teaches that bluing != poisonous
-        "tier": "hidden",
-        "gbif_usage_key": 9754889,
-        "notes": "Edible only thoroughly cooked. Held back from beginner suggestions on purpose.",
+        # red pores like Satans Rørhat and Djævle-Rørhat; instant blue bruising
+        # teaches that bluing != poisonous, but it takes experience
+        "lookalike_risk": "high",
+        "tier": "extra",
+        "gbif_usage_key": 9723190,
+        "notes": "Dark brown velvety cap, red pores, yellow stem with red dots (no "
+        "net), yellow flesh turning dark blue at once. Beech and spruce on acid "
+        "soil, June-October. Edible only thoroughly cooked.",
+    },
+    {
+        "danish_name": "Netstokket Indigorørhat",
+        "danish_name_verified": True,
+        "scientific_name": "Suillellus luridus",
+        "synonyms": ["Boletus luridus"],
+        "group": "rorhat",
+        "edible": True,
+        # red net on the stem, like Satans Rørhat and Djævle-Rørhat
+        "lookalike_risk": "high",
+        "tier": "extra",
+        "gbif_usage_key": 3355021,
+        "notes": "Olive- to orange-brown cap, orange-red pores, red net on the "
+        "stem, red line above the tubes when cut. Broadleaf trees on chalky "
+        "soil, parks, June-September. Edible only thoroughly cooked.",
     },
 ]
 

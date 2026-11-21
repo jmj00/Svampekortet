@@ -83,6 +83,12 @@ From the review page (scope switches) and a written second opinion:
   corrections from the earlier rounds, all already applied. Nothing was lost.
 - **Tragt-Kantarel** (`craterellus-tubaeformis`): the expert confirmed the text
   as it stands, season included; no further review needed.
+- **Indigorørhatte added** (2026-11-21, the owner's choice): Punktstokket
+  Indigorørhat (*Neoboletus erythropus*) and Netstokket Indigorørhat
+  (*Suillellus luridus*), tier `extra`, `lookalike_risk: "high"`. They replace the
+  hidden "Gul Indigorørhat" (*N. praestigiator*) entry, whose synonyms were in
+  fact catching Punktstokket's records. Satans Rørhat and Djævle-Rørhat are
+  shown on both pages. Seasons and trees are from their Danish finds.
 
 ### Flagged for the reviewer
 
@@ -95,6 +101,7 @@ From the review page (scope switches) and a written second opinion:
 | `calocybe-gambosa` | marked `lookalike_risk: "high"` because Giftig Trævlhat shares its habitat and overlaps in June — confirm; check the description of Giftig Trævlhat (cone-shaped fibrous cap, reddening) and the advice to dig up the base for Snehvid Fluesvamp |
 | `data/lookalikes.json` (round 2) | three more poisonous lookalikes: Grøn Fluesvamp (young egg, cut) and Almindelig Bruskbold on the four støvbolde; Ægte Stenmorkel on Spiselig Morkel. (Vårmusseron and Bleg Hekseringshat keep their lookalikes in the description only, by choice.) Archive names; seasons from their Danish finds. Check each text and that every photo (hand-picked, `reviewed: false`) shows the right species and the telling feature |
 | `rubroboletus-satanas`, `rubroboletus-legaliae` | lookalike texts and photos in `data/lookalikes.json` / `data/images/` — check the field marks and that each photo shows the right species |
+| `neoboletus-erythropus`, `suillellus-luridus` | new texts, written without a second opinion: check "kun gennemstegt", the alcohol warning on Netstokket (reported, not well documented), the field marks against Satans Rørhat and Djævle-Rørhat (red line above the tubes, wine-red stem base, dots vs net), and the photos (`reviewed: false`; the three Netstokket photos all have pale caps) |
 | *(all)* | every edibility claim, cap-size range, and "no toxic lookalike" line still needs an expert eye — these are the safety-critical lines and were not verifiable against a structured source |
 
 When a species is expert-reviewed, note it in this file (and, if we later add a
