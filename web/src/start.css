@@ -32,7 +32,7 @@
 
 @media (min-height: 780px) {
   :root {
-    --start-band: clamp(5.25rem, 20dvh, 11rem);
+    --start-band: clamp(5.25rem, 15dvh, 8.5rem);
   }
 }
 
@@ -140,7 +140,7 @@
 
 /* --- home view: headline -------------------------------------------------- */
 .start__head {
-  margin-top: 0.85rem;
+  margin-top: 0.9rem;
 }
 
 .start__eyebrow {
@@ -148,7 +148,7 @@
   align-items: center;
   gap: 0.45rem;
   min-height: 1rem; /* holds its line before the manifest has filled it */
-  margin: 0 0 0.2rem;
+  margin: 0 0 0.25rem;
   color: var(--muted);
   font-size: var(--text-xs);
   font-weight: 600;
@@ -172,7 +172,7 @@
 
 .start__title {
   margin: 0;
-  font-size: 1.625rem;
+  font-size: 1.5rem;
   line-height: 1.15;
   text-wrap: balance;
 }
@@ -181,184 +181,224 @@
   outline: none; /* programmatic focus target only (tabindex -1) */
 }
 
-/* --- home view: the four ways in ----------------------------------------- */
-.start__flows {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+.start__head .start__lead {
+  margin-top: 0.3rem;
+  font-size: var(--text-base);
+}
+
+.start__lead[hidden] {
+  display: none;
+}
+
+/* Static icons in the markup (start.ts uses the same class for its own). */
+.ic {
+  flex: none;
+  width: 1.25rem;
+  height: 1.25rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* --- "where?": position, search, the map ------------------------------------ */
+.place {
+  display: flex;
+  flex-direction: column;
   gap: 0.6rem;
-  margin: 0.7rem 0 0;
-  padding: 0;
-  list-style: none;
+  margin-top: 1rem;
 }
 
-.start__flow {
-  position: relative; /* for "Skift sted" */
+.place--home {
+  margin-top: 0.85rem;
 }
 
-.start__flow--wide {
-  grid-column: 1 / -1;
-}
-
-.flow {
-  position: relative;
+/* The one primary action: moss green, the reason for asking on its second
+   line, so the browser's question that follows is no surprise. */
+.locate {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  width: 100%;
-  height: 100%;
-  padding: 0.7rem 1rem;
-  border: 1px solid var(--border);
+  gap: 0.8rem;
+  min-height: 3.75rem;
+  padding: 0.55rem 1rem;
+  border: 1px solid transparent;
   border-radius: var(--radius-l);
-  background: var(--surface);
+  background: var(--start-hero-bg);
   box-shadow: var(--elev-1);
-  color: var(--ink);
-  font-size: var(--text-base);
+  color: var(--start-hero-ink);
   text-align: left;
   cursor: pointer;
   transition:
     transform 0.16s var(--ease-out),
-    box-shadow 0.16s var(--ease-out),
-    border-color 0.16s var(--ease-out);
+    box-shadow 0.16s var(--ease-out);
 }
 
-.flow__text {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  gap: 0.25rem;
-  min-width: 0;
-}
-
-.flow__title {
-  text-wrap: balance;
-  font-family: var(--font-display);
-  font-size: var(--text-lg);
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  line-height: 1.2;
-}
-
-.flow__sub {
-  /* never more than two lines, whatever the manifest puts in it */
-  display: -webkit-box;
-  overflow: hidden;
-  color: var(--muted);
-  font-size: var(--text-sm);
-  line-height: 1.4;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-}
-
-@media (hover: hover) {
-  .flow:hover {
-    border-color: var(--border-strong);
-    box-shadow: var(--elev-2);
-    transform: translateY(-1px);
-  }
-
-  .flow--hero:hover {
-    border-color: transparent;
-  }
-}
-
-.flow:active {
-  transform: scale(0.985);
-}
-
-/* 1: the primary way in */
-.flow--hero {
-  min-height: 6.5rem;
-  padding: 0.8rem 0.5rem 0.8rem 1rem;
-  overflow: hidden;
-  border-color: transparent;
-  background: var(--start-hero-bg);
-  color: var(--start-hero-ink);
-}
-
-.flow--hero .flow__title {
-  font-size: 1.3125rem;
-  line-height: 1.15;
-}
-
-.flow--hero .flow__sub {
-  color: var(--start-hero-sub);
-  /* its own fixed sentence is never cut: on a narrow screen or at a large text
-     size it takes the lines it needs */
-  display: block;
-  -webkit-line-clamp: none;
-  line-clamp: none;
-}
-
-.flow--hero:focus-visible {
+.locate:focus-visible {
   outline-offset: 3px;
 }
 
-/* a pin with the rings the map draws round it */
-.flow__art {
-  flex: none;
-  align-self: flex-end;
-  width: 5.5rem;
-  height: 5.5rem;
-  margin: -0.5rem 0 -1.4rem;
+@media (hover: hover) {
+  .locate:hover {
+    box-shadow: var(--elev-2);
+  }
 }
 
-.flow__ring {
-  fill: none;
-  stroke: var(--start-hero-line);
-  stroke-width: 1.2;
+.locate:active {
+  transform: scale(0.985);
 }
 
-.flow__ring--inner {
-  fill: rgb(255 253 248 / 0.08);
+.locate__icon {
+  width: 1.6rem;
+  height: 1.6rem;
 }
 
-.flow__pin {
-  fill: var(--start-pin);
-}
-
-.flow__pin-eye {
-  fill: var(--start-hero-bg);
-}
-
-/* 2: with the species' own photos. At a large text size the photos drop
-   below the words instead of squeezing them. */
-.flow--species {
-  flex-wrap: wrap;
-  row-gap: 0.5rem;
-}
-
-.flow--species .flow__text {
-  flex: 1 1 9rem;
-}
-
-.flow__thumbs {
-  flex: none;
+.locate__text {
   display: flex;
-  padding-left: 0.75rem;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
 }
 
-.flow__thumb {
-  position: relative;
+.locate__title {
+  font-size: 1.0625rem;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.locate__why {
+  color: var(--start-hero-sub);
+  font-size: var(--text-sm);
+  line-height: 1.35;
+}
+
+.locate__spinner {
   flex: none;
-  display: grid;
-  place-items: center;
-  width: 3rem;
-  height: 3rem;
-  margin-left: -0.75rem;
-  overflow: hidden;
-  border: 2px solid var(--surface);
+  width: 1.15rem;
+  height: 1.15rem;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
   border-radius: 50%;
-  background: color-mix(in srgb, var(--border) 60%, var(--surface));
-  color: var(--border-strong);
+  opacity: 0;
 }
 
-.flow__thumb svg {
-  width: 55%;
-  height: 55%;
+.locate[data-state="busy"] {
+  cursor: progress;
 }
 
-.flow__thumb img,
+.locate[data-state="busy"] .locate__spinner {
+  opacity: 0.9;
+  animation: start-spin 0.8s linear infinite;
+}
+
+/* The position could not be had: the button steps back for the search field. */
+.locate[data-state="failed"] {
+  border-color: var(--border-strong);
+  background: var(--surface);
+  box-shadow: none;
+  color: var(--muted);
+}
+
+.locate[data-state="failed"] .locate__why {
+  color: var(--muted);
+}
+
+/* "Continue at your pin": the first answer when there is one. */
+.resume {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 3.75rem;
+  padding: 0.55rem 0.9rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-l);
+  background: var(--surface);
+  box-shadow: var(--elev-1);
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.16s var(--ease-out);
+}
+
+.resume[hidden] {
+  display: none;
+}
+
+.resume:active {
+  transform: scale(0.985);
+}
+
+.resume__icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  color: var(--accent);
+}
+
+.resume__text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.resume__title {
+  overflow: hidden;
+  font-size: var(--text-md);
+  font-weight: 600;
+  line-height: 1.25;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.resume__sub {
+  color: var(--muted);
+  font-size: var(--text-sm);
+  line-height: 1.35;
+}
+
+.resume__chevron {
+  color: var(--muted);
+}
+
+@media (hover: hover) {
+  .resume:hover {
+    border-color: var(--muted);
+  }
+}
+
+/* Phone: the map lies behind the layer, so this lifts the layer off it. */
+.place__pick {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  margin: -0.2rem 0 -0.35rem -0.35rem;
+  padding: 0 0.6rem 0 0.35rem;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: none;
+  color: var(--link);
+  font-size: var(--text-base);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .place__pick:hover {
+    background: color-mix(in srgb, var(--accent) 10%, transparent);
+  }
+}
+
+/* Sidebar layout only (further down): the map is right beside. */
+.place__hint.place__hint--side {
+  display: none;
+}
+
+/* photos fade in over their placeholder once loaded */
+.strip__photo img,
 .tile__photo img {
   position: absolute;
   inset: 0;
@@ -369,154 +409,320 @@
   transition: opacity 0.25s ease;
 }
 
-.flow__thumb img.is-loaded,
+.strip__photo img.is-loaded,
 .tile__photo img.is-loaded {
   opacity: 1;
 }
 
-.flow__thumb--more {
-  background: color-mix(in srgb, var(--accent) 16%, var(--surface));
-  color: var(--link);
-  font-size: var(--text-xs);
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
+/* --- home view: in season now ------------------------------------------------ */
+.season {
+  margin-top: 1.35rem;
 }
 
-/* 3 and 4: side by side; the icon beside the title, the line underneath */
-.flow--tile {
-  flex-direction: column;
-  align-items: stretch;
-  justify-content: flex-start;
-  gap: 0.3rem;
-  padding: 0.65rem 0.75rem;
-}
-
-.flow__head {
+.season__head {
   display: flex;
   align-items: center;
-  gap: 0.55rem;
-  min-height: 2.25rem;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
 }
 
-.flow--tile .flow__title {
-  font-size: 1.0625rem;
-  line-height: 1.15;
+.season__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
 }
 
-.flow__icon {
+.season__all {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.1rem;
+  min-height: 2.75rem;
+  margin: -0.5rem -0.5rem -0.5rem 0;
+  padding: 0 0.3rem 0 0.6rem;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: none;
+  color: var(--link);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.season__all .ic {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+@media (hover: hover) {
+  .season__all:hover {
+    background: color-mix(in srgb, var(--accent) 10%, transparent);
+  }
+}
+
+/* A row of photos that runs off the edge: swipe for more. */
+.season__strip {
+  display: flex;
+  gap: 0.7rem;
+  margin: 0 calc(-1 * max(var(--gutter), env(safe-area-inset-right))) 0
+    calc(-1 * max(var(--gutter), env(safe-area-inset-left)));
+  padding: 0.15rem max(var(--gutter), env(safe-area-inset-right)) 0.35rem
+    max(var(--gutter), env(safe-area-inset-left));
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-padding: 0 var(--gutter);
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  list-style: none;
+}
+
+.season__strip::-webkit-scrollbar {
+  display: none;
+}
+
+.strip__item {
+  flex: 0 0 5.75rem;
+  scroll-snap-align: start;
+}
+
+.strip__tile {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  width: 100%;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-m);
+  background: none;
+  color: var(--ink);
+  font-size: var(--text-sm);
+  text-align: left;
+  cursor: pointer;
+}
+
+.strip__tile:focus-visible {
+  outline-offset: 3px;
+}
+
+.strip__photo {
+  position: relative;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: var(--radius-m);
+  background: color-mix(in srgb, var(--border) 55%, var(--surface));
+  color: var(--border-strong);
+  transition: box-shadow 0.16s var(--ease-out);
+}
+
+.strip__photo svg {
+  width: 42%;
+  height: 42%;
+}
+
+/* a hairline so pale photos keep their edge on the paper background */
+.strip__photo::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.08);
+  pointer-events: none;
+}
+
+@media (hover: hover) {
+  .strip__tile:hover .strip__photo {
+    box-shadow: 0 0 0 2px var(--accent);
+  }
+}
+
+.strip__tile:active .strip__photo {
+  transform: scale(0.97);
+}
+
+.strip__text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.strip__name {
+  display: -webkit-box;
+  overflow: hidden;
+  font-weight: 600;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+.strip__meta {
+  color: var(--muted);
+  font-size: var(--text-xs);
+  line-height: 1.3;
+}
+
+.strip__meta[data-season="in"],
+.strip__meta[data-season="peak"] {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.strip__meta[data-season="in"]::before,
+.strip__meta[data-season="peak"]::before {
+  content: "";
+  flex: none;
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: var(--score-good);
+}
+
+.strip__meta[data-season="peak"] {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/* the last tile: every species */
+.strip__photo--all {
+  background: color-mix(in srgb, var(--brand) 9%, var(--surface));
+  color: var(--brand);
+}
+
+.strip__photo--all::before {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand) 22%, transparent);
+}
+
+.strip__photo--all svg {
+  width: 36%;
+  height: 36%;
+}
+
+/* waiting for the species' page: a ring over its photo */
+.strip__tile[data-state="loading"] .strip__photo::after {
+  content: "";
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  left: 50%;
+  width: 1.75rem;
+  height: 1.75rem;
+  margin: -0.875rem 0 0 -0.875rem;
+  border: 3px solid #fff;
+  border-top-color: transparent;
+  border-radius: 50%;
+  filter: drop-shadow(0 0 2px rgb(0 0 0 / 0.6));
+  animation: start-spin 0.8s linear infinite;
+}
+
+.strip__tile[data-state="loading"] .strip__photo img {
+  filter: brightness(0.7);
+}
+
+.strip__item--skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.strip__item--skeleton .strip__photo {
+  display: block;
+}
+
+.strip__bar {
+  width: 80%;
+  height: 0.75rem;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--border) 55%, var(--surface));
+}
+
+.season .picker__status {
+  margin-top: 0.5rem;
+}
+
+/* --- home view: the two other ways in ------------------------------------------ */
+.start__more {
+  margin: 1.1rem 0 0.75rem;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-l);
+  background: var(--surface);
+  list-style: none;
+}
+
+.start__more li + li {
+  border-top: 1px solid var(--border);
+}
+
+.more {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  width: 100%;
+  min-height: 3.75rem;
+  padding: 0.55rem 0.9rem;
+  border: none;
+  background: none;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.more:focus-visible {
+  outline-offset: -3px;
+}
+
+@media (hover: hover) {
+  .more:hover {
+    background: color-mix(in srgb, var(--border) 28%, var(--surface));
+  }
+}
+
+.more__icon {
   flex: none;
   display: grid;
   place-items: center;
   width: 2.25rem;
   height: 2.25rem;
   border-radius: 50%;
-  background: color-mix(in srgb, var(--brand) 13%, var(--surface));
+  background: color-mix(in srgb, var(--brand) 12%, var(--surface));
   color: var(--brand);
 }
 
-.flow__icon svg {
-  width: 1.25rem;
-  height: 1.25rem;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.75;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.flow__icon--photos {
+.more__text {
   display: flex;
-  width: auto;
-  padding-left: 0.75rem;
-  border-radius: 0;
-  background: none;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
 }
 
-.flow__icon--photos .flow__thumb {
-  width: 2.25rem;
-  height: 2.25rem;
-}
-
-.flow__icon--photos .flow__thumb svg {
-  fill: currentColor;
-  stroke: none;
-}
-
-/* With a pin set: the card names it on one line and goes straight in; "Skift
-   sted" is a button of its own, laid over the card's lower edge. */
-.start__flow.has-pin > .flow {
-  padding-bottom: 2.3rem;
-}
-
-.start__flow.has-pin .flow__sub {
-  display: block;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-/* the hero has the width to give a long pin name a second line */
-.start__flow.has-pin .flow--hero .flow__sub {
-  display: -webkit-box;
-  white-space: normal;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-}
-
-.flow__change {
-  position: absolute;
-  z-index: 1;
-  bottom: 0.4rem;
-  left: 0.75rem;
-  height: 1.75rem;
-  padding: 0;
-  border: none;
-  border-radius: var(--radius-s);
-  background: none;
-  color: var(--link);
-  font-size: var(--text-sm);
+.more__title {
+  font-size: var(--text-md);
   font-weight: 600;
-  text-decoration: underline;
-  text-decoration-thickness: 1px;
-  text-underline-offset: 3px;
-  cursor: pointer;
+  line-height: 1.25;
 }
 
-.flow__change[hidden] {
-  display: none;
-}
-
-/* 44px touch target around the line of text */
-.flow__change::after {
-  content: "";
-  position: absolute;
-  inset: -0.5rem -0.75rem;
-}
-
-.flow--hero + .flow__change {
-  left: 1rem;
-  color: var(--start-hero-ink);
-}
-
-/* Sidebar layout only: the map beside the start screen takes a pin directly. */
-.start__maphint {
-  display: none;
-  align-items: center;
-  gap: 0.5rem;
-  margin: 0.6rem 0 0;
+.more__sub {
   color: var(--muted);
   font-size: var(--text-sm);
-  line-height: 1.4;
+  line-height: 1.35;
 }
 
-.start__maphint svg {
-  flex: none;
-  width: 1.15rem;
-  height: 1.15rem;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.8;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+.more__chevron {
+  color: var(--muted);
 }
 
 /* --- home view: the way to the map, and the safety strip -------------------- */
@@ -752,87 +958,6 @@
 .start-field input:focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: 1px;
-}
-
-/* --- place step ------------------------------------------------------------ */
-.place {
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-  margin-top: 1rem;
-}
-
-.place__option {
-  display: flex;
-  align-items: center;
-  gap: 0.7rem;
-  min-height: 3.25rem;
-  padding: 0.55rem 1rem;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-l);
-  background: var(--surface);
-  box-shadow: var(--elev-1);
-  color: var(--ink);
-  font-size: var(--text-md);
-  font-weight: 600;
-  line-height: 1.25;
-  text-align: left;
-  cursor: pointer;
-  transition: transform 0.16s var(--ease-out);
-}
-
-.place__option:active {
-  transform: scale(0.985);
-}
-
-.place__option--primary {
-  border-color: transparent;
-  background: var(--start-hero-bg);
-  color: var(--start-hero-ink);
-}
-
-.place__option--primary:focus-visible {
-  outline-offset: 3px;
-}
-
-.place__option .sk-icon {
-  width: 1.4rem;
-  height: 1.4rem;
-}
-
-.place__option-text {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.place__option-sub {
-  overflow: hidden;
-  font-size: var(--text-sm);
-  font-weight: 400;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  opacity: 0.86;
-}
-
-.place__option[data-state="busy"] {
-  cursor: progress;
-}
-
-.place__spinner {
-  flex: none;
-  width: 1.15rem;
-  height: 1.15rem;
-  margin-left: auto;
-  border: 2px solid currentColor;
-  border-top-color: transparent;
-  border-radius: 50%;
-  opacity: 0;
-}
-
-.place__option[data-state="busy"] .place__spinner {
-  opacity: 0.9;
-  animation: start-spin 0.8s linear infinite;
 }
 
 @keyframes start-spin {
@@ -1184,14 +1309,6 @@
   order: -1;
 }
 
-/* The position could not be had: the button steps back for the search field. */
-.place__option[data-state="failed"] {
-  border-color: var(--border-strong);
-  background: var(--surface);
-  box-shadow: none;
-  color: var(--muted);
-}
-
 .place__or[hidden] {
   display: none;
 }
@@ -1347,134 +1464,64 @@
   .start__bar {
     margin-top: 0.4rem;
   }
-}
 
-/* Narrow phones. */
-/* The narrowest phones: the words need the width more than the drawing does. */
-@media (max-width: 339.98px) {
-  .flow__art {
+  /* Typing in the home view's search: the layer takes the whole screen, so
+     the suggestions have the room above the keyboard (start.ts): what
+     stands above the field steps aside while it is in use. */
+  #start[data-searching] .start__sheet {
+    top: 0;
+    padding-top: env(safe-area-inset-top);
+    border-radius: 0;
+  }
+
+  #start[data-searching] .start__brand {
     display: none;
   }
 
-  .flow--hero {
-    padding-right: 1rem;
-  }
-}
-
-@media (max-width: 379.98px) {
-  .start__title:not(.start__title--step) {
-    font-size: 1.5rem;
+  #start[data-searching] .start__head,
+  #start[data-searching] .resume,
+  #start[data-searching] .place__or,
+  #start[data-searching] .locate {
+    display: none;
   }
 
-  .flow--hero .flow__title {
+  #start[data-searching] .place--home {
+    margin-top: 0.75rem;
+  }
+
+  /* The map step for "here" is only a card: its title, the way back, a line. */
+  #start[data-view="place"] [data-view="place"][data-flow="here"] .start__title--step {
     font-size: var(--text-lg);
   }
+}
 
-  .flow--species .flow__thumb {
-    width: 2.5rem;
-    height: 2.5rem;
-    margin-left: -0.9rem;
+/* The narrowest phones: shorter lines where they would wrap badly. */
+@media (max-width: 379.98px) {
+  .start__title:not(.start__title--step) {
+    font-size: 1.375rem;
   }
 
-  .flow__thumbs {
-    padding-left: 0.9rem;
-  }
-
-  .flow__art {
-    width: 5rem;
-    height: 5rem;
-  }
-
-  .flow--tile {
-    padding: 0.6rem 0.65rem;
-  }
-
-  .flow__head {
-    gap: 0.45rem;
-  }
-
-  .flow__icon {
-    width: 2rem;
-    height: 2rem;
-  }
-
-  .flow__icon--photos .flow__thumb {
-    width: 2rem;
-    height: 2rem;
-  }
-
-  .flow--tile .flow__title {
-    font-size: 1rem;
+  .strip__item {
+    flex-basis: 5.25rem;
   }
 }
 
-/* Tall phones (an installed app, or a browser with its bars away): more air,
-   and the two small cards stand upright again. */
+/* Tall phones (an installed app, or a browser with its bars away): more air. */
 @media (max-width: 719.98px) and (min-height: 780px) {
   .start__head {
-    margin-top: 1.1rem;
+    margin-top: 1.15rem;
   }
 
   .start__title:not(.start__title--step) {
-    font-size: var(--text-2xl);
+    font-size: 1.625rem;
   }
 
-  .start__flows {
-    gap: 0.75rem;
+  .place--home {
     margin-top: 1rem;
   }
 
-  .flow {
-    padding: 1rem;
-  }
-
-  .flow--hero {
-    min-height: 7.75rem;
-    padding: 1.1rem 0.5rem 1.1rem 1.15rem;
-  }
-
-  .flow--hero .flow__title {
-    font-size: var(--text-xl);
-  }
-
-  .flow__art {
-    width: 6.25rem;
-    height: 6.25rem;
-    margin-bottom: -1.6rem;
-  }
-
-  .flow--tile {
-    min-height: 8rem;
-    padding: 0.9rem;
-  }
-
-  .flow__head {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.6rem;
-  }
-
-  .flow__icon,
-  .flow__icon--photos .flow__thumb {
-    width: 2.5rem;
-    height: 2.5rem;
-  }
-
-  .flow--tile .flow__title {
-    font-size: var(--text-lg);
-  }
-
-  .start__flow.has-pin > .flow {
-    padding-bottom: 2.5rem;
-  }
-
-  .flow__change {
-    bottom: 0.55rem;
-    left: 0.9rem;
-  }
-
-  .flow--hero + .flow__change {
-    left: 1.15rem;
+  .season {
+    margin-top: 1.5rem;
   }
 
   .start__safety {
@@ -1548,10 +1595,6 @@
     margin-top: 0.6rem;
   }
 
-  .start__maphint {
-    display: flex;
-  }
-
   .start__bar {
     margin-top: 0.25rem;
   }
@@ -1563,89 +1606,66 @@
   }
 }
 
-/* A tall sidebar has room to let the cards breathe. */
+/* The sidebar: the map beside takes a click, and the season is a grid (a
+   mouse does not swipe): one row of three and "all", two rows when tall. */
+@media (min-width: 720px), (min-width: 560px) and (max-height: 520px) {
+  .place__pick {
+    display: none;
+  }
+
+  .place__hint.place__hint--side {
+    display: flex;
+  }
+
+  .season__strip {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.8rem 0.6rem;
+    margin: 0;
+    padding: 0.15rem 0 0;
+    overflow: visible;
+    scroll-snap-type: none;
+  }
+
+  .strip__item:nth-child(n + 4):not(:last-child) {
+    display: none;
+  }
+}
+
+@media (min-width: 720px) and (min-height: 1000px) {
+  .strip__item:nth-child(n + 4):not(:last-child) {
+    display: block;
+  }
+
+  .strip__item:nth-child(n + 8):not(:last-child) {
+    display: none;
+  }
+}
+
+/* A tall sidebar has room to breathe. */
 @media (min-width: 720px) and (min-height: 800px) {
   .start__brand {
     height: 4rem;
   }
 
   .start__head {
-    margin-top: 1.5rem;
+    margin-top: 1.25rem;
   }
 
   .start__title:not(.start__title--step) {
     font-size: var(--text-2xl);
   }
 
-  .start__flows {
-    gap: 0.85rem;
-    margin-top: 1.5rem;
+  .place--home {
+    margin-top: 1.1rem;
   }
 
-  .flow {
-    padding: 1rem;
+  .season {
+    margin-top: 1.6rem;
   }
 
-  .flow--hero {
-    min-height: 9.5rem;
-    padding: 1.35rem 0.5rem 1.35rem 1.15rem;
-  }
-
-  .flow--hero .flow__title {
-    font-size: 1.5rem;
-  }
-
-  .flow--hero .flow__sub,
-  .flow--species .flow__sub {
-    font-size: var(--text-base);
-  }
-
-  .flow__art {
-    width: 7rem;
-    height: 7rem;
-    margin-bottom: -1.6rem;
-  }
-
-  .flow--species {
-    min-height: 6.5rem;
-  }
-
-  .flow--tile {
-    min-height: 9rem;
-    padding: 1.1rem 1rem;
-  }
-
-  .flow__head {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.7rem;
-  }
-
-  .flow__icon,
-  .flow__icon--photos .flow__thumb {
-    width: 2.5rem;
-    height: 2.5rem;
-  }
-
-  .flow--tile .flow__title {
-    font-size: var(--text-lg);
-  }
-
-  .start__flow.has-pin > .flow {
-    padding-bottom: 2.6rem;
-  }
-
-  .flow__change {
-    bottom: 0.65rem;
-    left: 1rem;
-  }
-
-  .flow--hero + .flow__change {
-    left: 1.15rem;
-  }
-
-  .start__maphint {
-    margin-top: 1rem;
+  .start__more {
+    margin-top: 1.4rem;
   }
 
   .start__safety {
@@ -1655,9 +1675,9 @@
   }
 }
 
-/* Short landscape phones: the sidebar is narrow and low. Titles only, so all
-   four ways in show above the safety strip, which keeps its first sentence
-   and the number. */
+/* Short landscape phones: the sidebar is narrow and low. The second lines
+   go, so the position, the search and the season show above the safety
+   strip, which keeps its first sentence and the number. */
 @media (min-width: 560px) and (max-height: 520px) {
   .start__brand {
     height: 2.5rem;
@@ -1673,9 +1693,11 @@
   }
 
   .start__tag,
-  .start__maphint,
+  .start__head .start__lead,
   .start__install,
-  .start__flows .flow__sub,
+  .locate__why,
+  .more__sub,
+  .strip__meta,
   .start__safety p span {
     display: none;
   }
@@ -1685,58 +1707,21 @@
   }
 
   .start__title:not(.start__title--step) {
-    font-size: 1.375rem;
+    font-size: 1.25rem;
   }
 
-  .start__flows {
-    gap: 0.45rem;
+  .place--home {
     margin-top: 0.5rem;
   }
 
-  .flow--hero {
-    min-height: 3.75rem;
-    padding-top: 0.5rem;
-    padding-bottom: 0.5rem;
+  .locate,
+  .resume,
+  .more {
+    min-height: 3rem;
   }
 
-  .flow--hero .flow__title {
-    font-size: var(--text-lg);
-  }
-
-  .flow__art {
-    width: 4rem;
-    height: 4rem;
-    margin-bottom: -1.2rem;
-  }
-
-  .flow--species {
-    padding-top: 0.4rem;
-    padding-bottom: 0.4rem;
-  }
-
-  .flow--species .flow__thumb {
-    width: 2.25rem;
-    height: 2.25rem;
-    margin-left: -0.9rem;
-  }
-
-  .flow--tile {
-    justify-content: center;
-    padding: 0.4rem 0.6rem;
-  }
-
-  .flow--tile .flow__title {
-    font-size: 1rem;
-  }
-
-  .flow__icon,
-  .flow__icon--photos .flow__thumb {
-    width: 2rem;
-    height: 2rem;
-  }
-
-  .flow__icon--photos .flow__thumb:nth-child(n + 2) {
-    display: none;
+  .season {
+    margin-top: 0.9rem;
   }
 
   .start__safety {
@@ -1764,8 +1749,7 @@
     animation: start-fade-out 0.2s var(--ease-out) both;
   }
 
-  #app[data-start] .start__view > *,
-  #app[data-start] .start__flow {
+  #app[data-start] .start__view > * {
     animation: start-rise 0.32s var(--ease-out) both;
   }
 
@@ -1773,19 +1757,12 @@
     animation-delay: 30ms;
   }
 
-  .start__view > :nth-child(3),
-  .start__flow:nth-child(2) {
+  .start__view > :nth-child(3) {
     animation-delay: 60ms;
   }
 
-  .start__view > :nth-child(n + 4),
-  .start__flow:nth-child(n + 3) {
+  .start__view > :nth-child(n + 4) {
     animation-delay: 90ms;
-  }
-
-  /* the list itself does not move twice: its cards do */
-  #app[data-start] .start__view > .start__flows {
-    animation: none;
   }
 }
 
@@ -1846,25 +1823,27 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .flow,
-  .place__option,
+  .locate,
+  .resume,
   .start__skip svg,
   .tile__photo,
-  .flow__thumb img,
+  .strip__photo,
+  .strip__photo img,
   .tile__photo img {
     transition: none;
   }
 
-  .flow:hover,
-  .flow:active,
-  .place__option:active,
-  .tile:active .tile__photo {
+  .locate:active,
+  .resume:active,
+  .tile:active .tile__photo,
+  .strip__tile:active .strip__photo {
     transform: none;
   }
 
   /* no spinning: the label says what is going on */
-  .place__option[data-state="busy"] .place__spinner,
-  .tile[data-state="loading"] .tile__photo::after {
+  .locate[data-state="busy"] .locate__spinner,
+  .tile[data-state="loading"] .tile__photo::after,
+  .strip__tile[data-state="loading"] .strip__photo::after {
     animation: none;
     border-top-color: currentColor;
     opacity: 0.6;
@@ -1975,4 +1954,106 @@
   #brand:focus-visible {
     outline-offset: -3px;
   }
+}
+
+/* =====================================================================
+   The return card (resume.ts): above the species list when the app opens
+   on a pin remembered from last time.
+   ===================================================================== */
+#resume {
+  flex: none;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 0 0.25rem;
+  margin: 0.75rem var(--gutter) 0;
+  padding: 0.6rem 0.45rem 0.7rem 0.85rem;
+  border: 1px solid color-mix(in srgb, var(--score-good) 35%, var(--border));
+  border-radius: var(--radius-l);
+  background: color-mix(in srgb, var(--score-good) 8%, var(--surface));
+}
+
+#resume[hidden],
+#app[data-mobile-tab="skove"] #resume {
+  display: none;
+}
+
+.rc__summary {
+  margin: 0.15rem 0 0;
+  color: var(--ink);
+  font-size: var(--text-base);
+  line-height: 1.4;
+}
+
+.rc__summary strong {
+  font-weight: 700;
+}
+
+.rc__close {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  margin: -0.45rem 0 -0.5rem;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.rc__close svg,
+.rc__action svg {
+  width: 1.15rem;
+  height: 1.15rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+@media (hover: hover) {
+  .rc__close:hover {
+    background: color-mix(in srgb, var(--border) 45%, transparent);
+    color: var(--ink);
+  }
+}
+
+.rc__actions {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+}
+
+.rc__action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 2.75rem;
+  padding: 0 0.95rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.rc__action[hidden] {
+  display: none;
+}
+
+.rc__action--locate {
+  border-color: transparent;
+  background: var(--start-hero-bg);
+  color: var(--start-hero-ink);
+}
+
+.rc__action--locate:focus-visible {
+  outline-offset: 3px;
 }

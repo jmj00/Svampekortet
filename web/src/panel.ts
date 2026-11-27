@@ -33,6 +33,9 @@ export class SpeciesPanel {
   private rankScores: Map<string, Conditions> | null = null; // for the current pin
   private lastOpenedSlug: string | null = null; // for returning focus to its row
   private readonly list: SpeciesListView;
+  /** Every species has been scored at a new pin (the start screen and the
+   * return card sum it up). */
+  onRank: ((scores: Map<string, Conditions>) => void) | null = null;
 
   constructor(
     private readonly container: HTMLElement,
@@ -114,6 +117,7 @@ export class SpeciesPanel {
     if (token !== this.rankToken) return; // pin moved while loading
     this.rankScores = scores;
     this.list.setRank(true, scores);
+    this.onRank?.(scores);
   }
 
   private renderList(): void {

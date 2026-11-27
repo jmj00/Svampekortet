@@ -67,15 +67,22 @@ export function canOffer(): boolean {
   return detectPlatform() !== "other";
 }
 
-/** Keep `button.hidden` in step with canOffer(), and run the install on click. */
-export function bindInstallButton(button: HTMLButtonElement): void {
+/** Keep `button.hidden` in step with canOffer(), and run the install on click.
+ * `wanted`: whether this place offers it right now (the start screen waits
+ * until the app has been used). Returns the sync, to run again when that
+ * changes. */
+export function bindInstallButton(
+  button: HTMLButtonElement,
+  wanted: () => boolean = () => true,
+): () => void {
   const sync = (): void => {
-    button.hidden = !canOffer();
+    button.hidden = !(wanted() && canOffer());
   };
   listeners.add(sync);
   window.matchMedia?.("(display-mode: standalone)").addEventListener?.("change", sync);
   sync();
   button.addEventListener("click", () => void install());
+  return sync;
 }
 
 export async function install(): Promise<void> {
