@@ -102,9 +102,7 @@
                     <path d="M9.5 5.5 16 12l-6.5 6.5" />
                   </svg>
                 </button>
-                <p class="place__or" id="start-resume-or" aria-hidden="true" hidden>
-                  eller et nyt sted
-                </p>
+                <p class="place__or" id="start-resume-or" hidden>eller et nyt sted</p>
                 <button type="button" class="locate" id="start-locate">
                   <svg class="ic locate__icon" viewBox="0 0 24 24" aria-hidden="true">
                     <circle cx="12" cy="12" r="6.5" />
@@ -168,6 +166,7 @@
                   </svg>
                   <span>Eller klik på kortet, og sæt en nål dér.</span>
                 </p>
+                <p class="place__zoom" id="start-zoom" role="status" hidden></p>
               </div>
               <!-- What is fruiting this month, as photos: an answer before any
                    question. A tile opens the species and its finds; "Se listen"
@@ -388,17 +387,17 @@
               </svg>
             </button>
             <div class="rc__actions">
-              <button type="button" class="rc__action rc__action--locate" id="resume-locate">
+              <button type="button" class="rc__link" id="resume-locate">
                 <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                   <circle cx="12" cy="12" r="6.5" />
                   <circle cx="12" cy="12" r="2" fill="currentColor" />
                   <path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3" />
                 </svg>
-                <span>Brug min placering nu</span>
+                <span>Brug min placering i stedet</span>
               </button>
               <button
                 type="button"
-                class="rc__action"
+                class="rc__link rc__link--quiet"
                 id="resume-install"
                 aria-label="Føj Svampekortet til hjemmeskærmen"
                 hidden

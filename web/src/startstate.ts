@@ -212,6 +212,8 @@ export interface ScoredName {
   name: string;
   /** 0-100 */
   value: number;
+  /** For opening the species from the sentence that names it. */
+  slug?: string;
 }
 
 export interface TodayAtPin {
@@ -221,19 +223,26 @@ export interface TodayAtPin {
   best: ScoredName | null;
 }
 
-/** Sum up a ranking at the pin. Null while there is none (still loading, or
- * no model). */
-export function todayAtPin(scored: readonly ScoredName[]): TodayAtPin | null {
-  if (scored.length === 0) return null;
+/** Sum up a finished ranking at the pin. A ranking that scored nothing (the
+ * species files could not be fetched, offline) is "unavailable": there will
+ * be nothing to wait for. */
+export function todayAtPin(scored: readonly ScoredName[]): TodayAtPin | "unavailable" {
+  if (scored.length === 0) return "unavailable";
   let best: ScoredName | null = null;
   let good = 0;
-  for (const { name, value } of scored) {
+  for (const { name, value, slug } of scored) {
     const rounded = Math.round(value);
     if (rounded >= GOOD_SCORE) good++;
-    if (!best || rounded > best.value) best = { name, value: rounded };
+    if (!best || rounded > best.value)
+      best = slug === undefined ? { name, value: rounded } : { name, value: rounded, slug };
   }
   return { good, best };
 }
+
+/** What the return card says while there is no summary, and when there will
+ * be none. */
+export const TODAY_LOADING = "vurderer forholdene …";
+export const TODAY_UNAVAILABLE = "Dagens forhold kunne ikke beregnes lige nu.";
 
 const arter = (n: number): string => (n === 1 ? "1 art" : `${n} arter`);
 
@@ -245,15 +254,30 @@ export function todayShort(today: TodayAtPin): string {
     : `${arter(today.good)} med gode forhold i dag`;
 }
 
-/** The sentence of the return card, after "I dag ved din nål:": the count,
- * and the best one by name. */
-export function todayLong(today: TodayAtPin): string {
+/** The sentence of the return card, after "I dag ved din nål:", in three
+ * parts so the best species' name can be a link: `before` + name + `after`.
+ * Without a best species the whole sentence is in `before`. */
+export function todayParts(today: TodayAtPin): {
+  before: string;
+  best: ScoredName | null;
+  after: string;
+} {
   const best = today.best;
-  if (!best) return `${todayShort(today)}.`;
+  if (!best) return { before: `${todayShort(today)}.`, best: null, after: "" };
   if (today.good === 0)
-    return `Ingen arter har gode forhold. Bedst er ${best.name} med ${best.value}.`;
-  if (today.good === 1) return `${best.name} har gode forhold (${best.value}).`;
-  return `${arter(today.good)} har gode forhold – bedst er ${best.name} med ${best.value}.`;
+    return { before: "Ingen arter har gode forhold. Bedst er ", best, after: ` (${best.value}).` };
+  if (today.good === 1) return { before: "", best, after: ` har gode forhold (${best.value}).` };
+  return {
+    before: `${arter(today.good)} har gode forhold – bedst er `,
+    best,
+    after: ` (${best.value}).`,
+  };
+}
+
+/** The same sentence as plain text. */
+export function todayLong(today: TodayAtPin): string {
+  const { before, best, after } = todayParts(today);
+  return `${before}${best?.name ?? ""}${after}`;
 }
 
 // --- the season strip on the home view ---------------------------------------

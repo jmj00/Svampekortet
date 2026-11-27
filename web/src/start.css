@@ -271,6 +271,8 @@
   color: var(--start-hero-sub);
   font-size: var(--text-sm);
   line-height: 1.35;
+  /* two even lines where it wraps, never one word left on the second */
+  text-wrap: balance;
 }
 
 .locate__spinner {
@@ -390,6 +392,26 @@
   .place__pick:hover {
     background: color-mix(in srgb, var(--accent) 10%, transparent);
   }
+}
+
+/* "Zoomed in, tap again", after a tap from too far out (start.ts). */
+.place__zoom {
+  margin: 0.6rem 0 0;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-m);
+  background: color-mix(in srgb, var(--score-good) 12%, var(--surface));
+  color: var(--ink);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.place__zoom[hidden] {
+  display: none;
+}
+
+.place .place__zoom {
+  margin-top: 0;
 }
 
 /* Sidebar layout only (further down): the map is right beside. */
@@ -1661,11 +1683,11 @@
   }
 
   .season {
-    margin-top: 1.6rem;
+    margin-top: 1.35rem;
   }
 
   .start__more {
-    margin-top: 1.4rem;
+    margin-top: 1.15rem;
   }
 
   .start__safety {
@@ -1960,14 +1982,16 @@
    The return card (resume.ts): above the species list when the app opens
    on a pin remembered from last time.
    ===================================================================== */
+/* Kept to two lines and a row of links: on a phone at half height the
+   list's first row must still show under it. */
 #resume {
   flex: none;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: start;
   gap: 0 0.25rem;
-  margin: 0.75rem var(--gutter) 0;
-  padding: 0.6rem 0.45rem 0.7rem 0.85rem;
+  margin: 0.5rem var(--gutter) 0;
+  padding: 0.45rem 0.35rem 0.3rem 0.8rem;
   border: 1px solid color-mix(in srgb, var(--score-good) 35%, var(--border));
   border-radius: var(--radius-l);
   background: color-mix(in srgb, var(--score-good) 8%, var(--surface));
@@ -1979,22 +2003,57 @@
 }
 
 .rc__summary {
-  margin: 0.15rem 0 0;
+  /* never more than two lines, whatever the species is called */
+  display: -webkit-box;
+  margin: 0.1rem 0 0;
+  overflow: hidden;
   color: var(--ink);
-  font-size: var(--text-base);
+  font-size: var(--text-sm);
   line-height: 1.4;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
 }
 
 .rc__summary strong {
   font-weight: 700;
 }
 
+/* The best species' name: a link-like button with a 44px target. */
+.rc__species {
+  position: relative;
+  display: inline;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--link);
+  font: inherit;
+  font-weight: 600;
+  text-align: inherit;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.rc__species::after {
+  content: "";
+  position: absolute;
+  inset: -0.75rem -0.25rem;
+}
+
+.rc__species:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
 .rc__close {
+  position: relative;
   display: grid;
   place-items: center;
-  width: 2.75rem;
-  height: 2.75rem;
-  margin: -0.45rem 0 -0.5rem;
+  width: 2rem;
+  height: 2rem;
   padding: 0;
   border: none;
   border-radius: 50%;
@@ -2003,10 +2062,17 @@
   cursor: pointer;
 }
 
+/* 44px target around the 32px button */
+.rc__close::after {
+  content: "";
+  position: absolute;
+  inset: -0.375rem;
+}
+
 .rc__close svg,
-.rc__action svg {
-  width: 1.15rem;
-  height: 1.15rem;
+.rc__link svg {
+  width: 1.1rem;
+  height: 1.1rem;
   fill: none;
   stroke: currentColor;
   stroke-width: 1.9;
@@ -2025,35 +2091,46 @@
   grid-column: 1 / -1;
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-top: 0.6rem;
+  align-items: center;
+  gap: 0 1.1rem;
+  margin: 0.15rem 0 0 -0.3rem;
 }
 
-.rc__action {
+/* Links, not buttons: neither is the answer, both are a next step. The
+   visible line is 28px; the target reaches 44px. */
+.rc__link {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 0.45rem;
-  min-height: 2.75rem;
-  padding: 0 0.95rem;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-pill);
-  background: var(--surface);
-  color: var(--ink);
+  gap: 0.35rem;
+  min-height: 1.75rem;
+  padding: 0 0.3rem;
+  border: none;
+  border-radius: var(--radius-s);
+  background: none;
+  color: var(--link);
   font-size: var(--text-sm);
   font-weight: 600;
   cursor: pointer;
 }
 
-.rc__action[hidden] {
+.rc__link::after {
+  content: "";
+  position: absolute;
+  inset: -0.5rem 0;
+}
+
+.rc__link[hidden] {
   display: none;
 }
 
-.rc__action--locate {
-  border-color: transparent;
-  background: var(--start-hero-bg);
-  color: var(--start-hero-ink);
+.rc__link--quiet {
+  color: var(--muted);
 }
 
-.rc__action--locate:focus-visible {
-  outline-offset: 3px;
+@media (hover: hover) {
+  .rc__link:hover span {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
 }

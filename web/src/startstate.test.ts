@@ -18,6 +18,7 @@ import {
   stripSpecies,
   todayAtPin,
   todayLong,
+  todayParts,
   todayShort,
   varied,
   writeStoredPin,
@@ -216,12 +217,27 @@ describe("today at the pin", () => {
       good: 2,
       best: { name: "Almindelig Judasøre", value: 64 },
     });
-    expect(todayAtPin([])).toBeNull();
+  });
+
+  it("calls a ranking that scored nothing unavailable, not still loading", () => {
+    // rankHere drops every species it could not fetch: offline, that is all of them
+    expect(todayAtPin([])).toBe("unavailable");
+  });
+
+  it("keeps the best one's slug, to open it from the sentence", () => {
+    expect(todayAtPin([{ name: "A", value: 70, slug: "a" }])).toEqual({
+      good: 1,
+      best: { name: "A", value: 70, slug: "a" },
+    });
   });
 
   it("counts a score that rounds up to the line as good", () => {
-    expect(todayAtPin([{ name: "A", value: 59.6 }])?.good).toBe(1);
-    expect(todayAtPin([{ name: "A", value: 59.4 }])?.good).toBe(0);
+    const good = (value: number): number | undefined => {
+      const today = todayAtPin([{ name: "A", value }]);
+      return today === "unavailable" ? undefined : today.good;
+    };
+    expect(good(59.6)).toBe(1);
+    expect(good(59.4)).toBe(0);
   });
 
   it("says it in a line for the start screen", () => {
@@ -233,11 +249,16 @@ describe("today at the pin", () => {
   it("and in a sentence for the return card", () => {
     const best = { name: "Almindelig Judasøre", value: 64 };
     expect(todayLong({ good: 2, best })).toBe(
-      "2 arter har gode forhold – bedst er Almindelig Judasøre med 64.",
+      "2 arter har gode forhold – bedst er Almindelig Judasøre (64).",
     );
+    expect(todayParts({ good: 2, best })).toEqual({
+      before: "2 arter har gode forhold – bedst er ",
+      best,
+      after: " (64).",
+    });
     expect(todayLong({ good: 1, best })).toBe("Almindelig Judasøre har gode forhold (64).");
     expect(todayLong({ good: 0, best: { name: "Trompetsvamp", value: 25 } })).toBe(
-      "Ingen arter har gode forhold. Bedst er Trompetsvamp med 25.",
+      "Ingen arter har gode forhold. Bedst er Trompetsvamp (25).",
     );
   });
 });

@@ -108,6 +108,11 @@ export interface StartScreen {
   show(view: StartView, flow?: PlaceFlow): void;
   /** The pin's name or today's line for it changed: redraw what shows them. */
   refreshPin(): void;
+  /** A tap on the map from this far out should zoom in rather than set the
+   * pin: the "here" map step, or the home view beside a live map. */
+  wantsCloserTap(): boolean;
+  /** The map zoomed in on a tap that was too far out: say to tap again. */
+  zoomedIn(): void;
   /** Phone only: how much of the map the layer covers from the top and the
    * bottom, so the camera can aim at what is left. Null when it covers none
    * (closed, or beside the map on a wide screen). */
@@ -326,6 +331,7 @@ export function initStart(deps: StartDeps): StartScreen {
   /** Back to a fresh home view: no position on its way, no search open. */
   function resetHome(): void {
     stopLocating();
+    homeZoom.hidden = true;
     for (const block of blocks) block.reset();
     pending = null;
     refreshHome();
@@ -498,6 +504,12 @@ export function initStart(deps: StartDeps): StartScreen {
 
   // --- place step -----------------------------------------------------------
 
+  /** "Zoomed in, tap again": in the "here" map step, and on the home view
+   * beside the map (sidebar layout). */
+  const pickZoom = h("p", "place__zoom");
+  pickZoom.setAttribute("role", "status");
+  const homeZoom = byId("start-zoom");
+
   let stepBlock: PlaceBlock | null = null;
 
   function showPlace(flow: PlaceFlow): void {
@@ -519,7 +531,8 @@ export function initStart(deps: StartDeps): StartScreen {
         "start__lead",
         "Zoom ind, så du rammer den rigtige skov. Så vurderer vi dagens forhold dér.",
       );
-      views.place.replaceChildren(title, backButton("pick"), lead);
+      pickZoom.hidden = true;
+      views.place.replaceChildren(title, backButton("pick"), lead, pickZoom);
       views.place.dataset.flow = "here";
     } else {
       title.textContent = FOREST_COPY.title;
@@ -970,6 +983,14 @@ export function initStart(deps: StartDeps): StartScreen {
     },
     refreshPin(): void {
       if (view !== null) refreshHome();
+    },
+    wantsCloserTap: () =>
+      (view === "place" && pending === "here") || (view === "home" && !phone.matches),
+    zoomedIn(): void {
+      const verb = phone.matches ? "Tryk" : "Klik";
+      const box = view === "place" ? pickZoom : homeZoom;
+      box.textContent = `Vi har zoomet ind. ${verb} igen dér, hvor du vil lede.`;
+      box.hidden = false;
     },
     mapCover(): { top: number; bottom: number } | null {
       if (view === null || !phone.matches) return null;
