@@ -78,98 +78,181 @@
             <div class="start__view" data-view="home">
               <header class="start__head">
                 <p class="start__eyebrow" id="start-eyebrow"></p>
-                <h2 class="start__title" id="start-title" tabindex="-1">Hvor vil du begynde?</h2>
+                <h2 class="start__title" id="start-title" tabindex="-1">
+                  Hvad kan jeg finde her i dag?
+                </h2>
+                <p class="start__lead" id="start-lead">
+                  Vælg et sted, så vurderer vi dagens forhold for hver spisesvamp dér.
+                </p>
               </header>
-              <!-- With a pin already set, the first and third card go straight in
-                   for that pin, name it in their second line, and get a "Skift
-                   sted" button of their own (start.ts). -->
-              <ul class="start__flows" role="list">
-                <li class="start__flow start__flow--wide">
-                  <button type="button" class="flow flow--hero" data-flow="here">
-                    <span class="flow__text">
-                      <span class="flow__title">Hvad kan jeg finde her i dag?</span>
-                      <span class="flow__sub" id="start-here-sub"
-                        >Vælg et sted, og se, hvilke svampe forholdene er bedst for lige nu.</span
-                      >
-                    </span>
-                    <svg class="flow__art" viewBox="0 0 96 96" aria-hidden="true" focusable="false">
-                      <circle class="flow__ring" cx="48" cy="58" r="42" />
-                      <circle class="flow__ring" cx="48" cy="58" r="28" />
-                      <circle class="flow__ring flow__ring--inner" cx="48" cy="58" r="14" />
-                      <path
-                        class="flow__pin"
-                        d="M48 60s-14-12.5-14-24a14 14 0 0 1 28 0c0 11.5-14 24-14 24z"
+              <!-- The one question the app needs answered: where. Position,
+                   search and the map, together (start.ts wires them). With a
+                   pin already set, "continue there" comes first. -->
+              <div class="place place--home" id="start-here">
+                <button type="button" class="resume" id="start-resume" data-flow="here" hidden>
+                  <svg class="ic resume__icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M12 21s-6.5-6.1-6.5-11a6.5 6.5 0 0 1 13 0c0 4.9-6.5 11-6.5 11z" />
+                    <circle cx="12" cy="10" r="2.3" />
+                  </svg>
+                  <span class="resume__text">
+                    <span class="resume__title" id="start-resume-title">Ved din nål</span>
+                    <span class="resume__sub" id="start-resume-sub"></span>
+                  </span>
+                  <svg class="ic resume__chevron" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M9.5 5.5 16 12l-6.5 6.5" />
+                  </svg>
+                </button>
+                <p class="place__or" id="start-resume-or" hidden>eller et nyt sted</p>
+                <button type="button" class="locate" id="start-locate">
+                  <svg class="ic locate__icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <circle cx="12" cy="12" r="6.5" />
+                    <circle cx="12" cy="12" r="2" fill="currentColor" />
+                    <path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3" />
+                  </svg>
+                  <span class="locate__text">
+                    <span class="locate__title">Brug min placering</span>
+                    <span class="locate__why">Kun til dagens vurdering – gemmes kun hos dig</span>
+                  </span>
+                  <span class="locate__spinner" aria-hidden="true"></span>
+                </button>
+                <p class="place__message" id="start-locate-message" role="status" hidden></p>
+                <div class="start-field place__field">
+                  <span class="start-field__icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24">
+                      <circle
+                        cx="11"
+                        cy="11"
+                        r="6.25"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.75"
                       />
-                      <circle class="flow__pin-eye" cx="48" cy="35.5" r="5" />
+                      <path
+                        d="m20 20-4.4-4.4"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.75"
+                        stroke-linecap="round"
+                      />
+                    </svg>
+                  </span>
+                  <input
+                    id="start-q"
+                    class="place__input"
+                    type="search"
+                    autocomplete="off"
+                    enterkeyhint="search"
+                    role="combobox"
+                    aria-expanded="false"
+                    aria-controls="start-results"
+                    aria-autocomplete="list"
+                  />
+                  <p class="search-status" id="start-search-status" hidden></p>
+                  <ul class="place__results" id="start-results" role="listbox"></ul>
+                </div>
+                <!-- Phone: the map is behind the layer, so a button lifts the
+                     layer off it. Sidebar layout: the map is right beside. -->
+                <button type="button" class="place__pick" data-flow="pick">
+                  <svg class="ic" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M3.5 6.5l5.5-2 6 2 5.5-2v13l-5.5 2-6-2-5.5 2z" />
+                    <path d="M9 4.5v13M15 6.5v13" />
+                  </svg>
+                  <span>Vælg et sted på kortet</span>
+                </button>
+                <p class="place__hint place__hint--side">
+                  <svg class="ic" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M3.5 6.5l5.5-2 6 2 5.5-2v13l-5.5 2-6-2-5.5 2z" />
+                    <path d="M9 4.5v13M15 6.5v13" />
+                  </svg>
+                  <span>Eller klik på kortet, og sæt en nål dér.</span>
+                </p>
+                <p class="place__zoom" id="start-zoom" role="status" hidden></p>
+              </div>
+              <!-- What is fruiting this month, as photos: an answer before any
+                   question. A tile opens the species and its finds; "Se listen"
+                   lands on the list filtered to the season. Filled by start.ts. -->
+              <section class="season" aria-labelledby="start-season-title">
+                <div class="season__head">
+                  <h3 class="season__title" id="start-season-title">I sæson nu</h3>
+                  <button type="button" class="season__all" data-flow="season">
+                    <span id="start-season-all">Se listen</span>
+                    <svg class="ic" viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M9.5 5.5 16 12l-6.5 6.5" />
                     </svg>
                   </button>
-                  <button type="button" class="flow__change" data-change="here" hidden>
-                    Skift sted
+                </div>
+                <ul class="season__strip" id="start-strip" role="list" aria-busy="true">
+                  <li class="strip__item strip__item--skeleton" aria-hidden="true">
+                    <span class="strip__photo"></span><span class="strip__bar"></span>
+                  </li>
+                  <li class="strip__item strip__item--skeleton" aria-hidden="true">
+                    <span class="strip__photo"></span><span class="strip__bar"></span>
+                  </li>
+                  <li class="strip__item strip__item--skeleton" aria-hidden="true">
+                    <span class="strip__photo"></span><span class="strip__bar"></span>
+                  </li>
+                  <li class="strip__item strip__item--skeleton" aria-hidden="true">
+                    <span class="strip__photo"></span><span class="strip__bar"></span>
+                  </li>
+                  <li class="strip__item strip__item--skeleton" aria-hidden="true">
+                    <span class="strip__photo"></span><span class="strip__bar"></span>
+                  </li>
+                </ul>
+                <p class="picker__status" id="start-strip-status" hidden></p>
+              </section>
+              <!-- The two other ways in, as rows. -->
+              <ul class="start__more" role="list">
+                <li>
+                  <button type="button" class="more" data-flow="forests">
+                    <span class="more__icon" aria-hidden="true">
+                      <svg class="ic" viewBox="0 0 24 24">
+                        <path
+                          d="M12 2.8l4.3 5.7h-2.1l4.3 5.5h-2.3l3.3 4H4.5l3.3-4H5.5l4.3-5.5H7.7z"
+                        />
+                        <path d="M12 18v3.2" />
+                      </svg>
+                    </span>
+                    <span class="more__text">
+                      <span class="more__title">Find en skov</span>
+                      <span class="more__sub" id="start-forests-sub"
+                        >De bedste skove i nærheden i dag</span
+                      >
+                    </span>
+                    <svg class="ic more__chevron" viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M9.5 5.5 16 12l-6.5 6.5" />
+                    </svg>
                   </button>
                 </li>
-                <li class="start__flow start__flow--wide">
-                  <button type="button" class="flow flow--species" data-flow="species">
-                    <span class="flow__text">
-                      <span class="flow__title">Hvor finder jeg …?</span>
-                      <span class="flow__sub">Vælg en svamp, og se, hvor den er fundet før.</span>
+                <li>
+                  <button type="button" class="more" data-flow="species">
+                    <span class="more__icon" aria-hidden="true">
+                      <svg class="ic" viewBox="0 0 24 24">
+                        <path
+                          d="M4 11.6c0-4.1 3.6-7.1 8-7.1s8 3 8 7.1c0 .8-.7 1.4-1.5 1.4h-13c-.8 0-1.5-.6-1.5-1.4z"
+                        />
+                        <path d="M9.5 13v4.25a2.5 2.5 0 0 0 5 0V13" />
+                      </svg>
                     </span>
-                    <span class="flow__thumbs" id="start-thumbs" aria-hidden="true"></span>
-                  </button>
-                </li>
-                <li class="start__flow">
-                  <button type="button" class="flow flow--tile" data-flow="forests">
-                    <span class="flow__head">
-                      <span class="flow__icon" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" focusable="false">
-                          <path
-                            d="M12 2.8l4.3 5.7h-2.1l4.3 5.5h-2.3l3.3 4H4.5l3.3-4H5.5l4.3-5.5H7.7z"
-                          />
-                          <path d="M12 18v3.2" />
-                        </svg>
-                      </span>
-                      <span class="flow__title">Find en skov</span>
+                    <span class="more__text">
+                      <span class="more__title">Hvor finder jeg …?</span>
+                      <span class="more__sub" id="start-species-sub"
+                        >Se, hvor en bestemt svamp er fundet</span
+                      >
                     </span>
-                    <span class="flow__sub" id="start-forests-sub"
-                      >De bedste skove i nærheden i dag.</span
-                    >
-                  </button>
-                  <button type="button" class="flow__change" data-change="forests" hidden>
-                    Skift sted
-                  </button>
-                </li>
-                <li class="start__flow">
-                  <button type="button" class="flow flow--tile" data-flow="season">
-                    <span class="flow__head">
-                      <span class="flow__icon" id="start-season-art" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" focusable="false">
-                          <rect x="3.5" y="5" width="17" height="15.5" rx="2" />
-                          <path d="M3.5 10h17M8 3v4M16 3v4" />
-                        </svg>
-                      </span>
-                      <span class="flow__title">Hvad er i sæson?</span>
-                    </span>
-                    <span class="flow__sub" id="start-season-line"
-                      >Se, hvad der er fremme i denne måned.</span
-                    >
+                    <svg class="ic more__chevron" viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M9.5 5.5 16 12l-6.5 6.5" />
+                    </svg>
                   </button>
                 </li>
               </ul>
-              <!-- Shown where the map is live beside the start screen (sidebar layout). -->
-              <p class="start__maphint">
-                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                  <path d="M3.5 6.5l5.5-2 6 2 5.5-2v13l-5.5 2-6-2-5.5 2z" />
-                  <path d="M9 4.5v13M15 6.5v13" />
-                </svg>
-                <span>Eller klik på kortet, og sæt en nål dér.</span>
-              </p>
               <button type="button" class="start__skip" data-flow="map">
                 <span id="start-skip-label">Gå direkte til kortet</span>
                 <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                   <path d="M5 12h14M13 6l6 6-6 6" />
                 </svg>
               </button>
-              <!-- Shown by src/install.ts only where the app can go on the home
-                   screen and is not already running from there. -->
+              <!-- Offered on a first visit too, where the app can be installed
+                   (install.ts). -->
               <button type="button" class="start__install" id="start-install" hidden>
                 <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                   <rect x="6.5" y="2.5" width="11" height="19" rx="2.5" />
@@ -289,6 +372,44 @@
           </div>
         </div>
         <div id="sheet-body">
+          <!-- A returning visitor's pin, scored for today (src/resume.ts):
+               shown above the species list when the app opens on a pin
+               remembered from last time, until it is closed or the pin moves. -->
+          <section id="resume" aria-labelledby="resume-title" hidden>
+            <h2 class="sr-only" id="resume-title">I dag ved din nål</h2>
+            <p class="rc__summary" aria-live="polite">
+              <strong>I dag ved din nål:</strong>
+              <span id="resume-summary">vurderer forholdene …</span>
+            </p>
+            <button type="button" class="rc__close" aria-label="Luk">
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="m7 7 10 10M17 7 7 17" />
+              </svg>
+            </button>
+            <div class="rc__actions">
+              <button type="button" class="rc__link" id="resume-locate">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <circle cx="12" cy="12" r="6.5" />
+                  <circle cx="12" cy="12" r="2" fill="currentColor" />
+                  <path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3" />
+                </svg>
+                <span>Brug min placering i stedet</span>
+              </button>
+              <button
+                type="button"
+                class="rc__link rc__link--quiet"
+                id="resume-install"
+                aria-label="Føj Svampekortet til hjemmeskærmen"
+                hidden
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <rect x="6.5" y="2.5" width="11" height="19" rx="2.5" />
+                  <path d="M12 7v7M9 11l3 3 3-3M10.5 18.5h3" />
+                </svg>
+                <span>Installér</span>
+              </button>
+            </div>
+          </section>
           <aside id="panel" aria-label="Svampeliste og artsdetaljer">Indlæser…</aside>
           <div id="forest-finder">
             <!-- Contents are driven by src/forestfinder.ts; data-state on

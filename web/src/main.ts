@@ -24,8 +24,8 @@ import {
 import { SpeciesPanel } from "./panel";
 import { clearPinRing, showPinRing } from "./pinring";
 import { attachPlaceSearch, type PlaceKind } from "./placesearch";
-import { bindInstallButton } from "./install";
 import { registerServiceWorker } from "./register-sw";
+import { initResume } from "./resume";
 import { initErrorMonitoring } from "./sentry";
 import { initSheet } from "./sheet";
 import { initStart, type Landing, type LocateResult } from "./start";
@@ -35,13 +35,15 @@ import {
   readStoredPin,
   restoredLabel,
   shouldShowStart,
+  todayAtPin,
+  todayShort,
   writeStoredPin,
+  type TodayAtPin,
 } from "./startstate";
 import type { ForestPoint, Manifest } from "./types";
 
 initErrorMonitoring();
 registerServiceWorker();
-bindInstallButton(document.getElementById("start-install") as HTMLButtonElement);
 
 // The pin from the last visit, remembered on this device only (startstate.ts).
 // With one, the app opens on the map around it; without, on the start screen.
@@ -108,8 +110,15 @@ mapReady
     map.on("click", (e) => {
       // The start screen's species step asks for a species, not a place.
       if (start.ignoresMapClicks()) return;
-      locateGate.superseded(); // the user picked a spot themselves
       const { lng, lat } = e.lngLat;
+      // From the start screen's "where?", a tap with the whole country in
+      // view says "about here": zoom in on it, and let the next tap be the pin.
+      if (start.isOpen() && start.wantsCloserTap() && map.getZoom() < MAP_TAP_FAR_ZOOM) {
+        closeInOnTap(map, [lng, lat]);
+        start.zoomedIn();
+        return;
+      }
+      locateGate.superseded(); // the user picked a spot themselves
       setPin([lng, lat]); // named after the nearest forest, see describePin
       // no camera animation here, so the forest finder need not wait
       afterPin("map", [lng, lat]);
@@ -125,6 +134,11 @@ mapReady
   .catch((err) => console.error("map failed to load", err));
 
 let panel: SpeciesPanel | null = null;
+/** Today's ranking at the pin, summed up; null until the panel has scored
+ * it, "unavailable" when it could not. */
+let pinToday: TodayAtPin | "unavailable" | null = null;
+/** The pin, its name or its summary changed (set up with the start screen). */
+let onPinChanged: () => void = () => {};
 /** The browser history (nav.ts); set up once the rest of the page is. */
 let navigation: Navigation | null = null;
 let pinLngLat: [number, number] | null = null;
@@ -249,7 +263,21 @@ function buildPanel(manifestLoading: Promise<Manifest>): Promise<SpeciesPanel> {
           ),
       );
       panel = created;
+      // Today at the pin, summed up for the start screen and the return card.
+      created.onRank = (scores) => {
+        pinToday = todayAtPin(
+          manifest.species
+            .filter((s) => scores.has(s.slug))
+            .map((s) => ({
+              name: s.danish_name,
+              value: scores.get(s.slug)?.value ?? 0,
+              slug: s.slug,
+            })),
+        );
+        onPinChanged();
+      };
       if (pinLngLat) created.setPin(pinLngLat);
+      onPinChanged(); // (without a model there will be no ranking to wait for)
       void loadForests(manifest.forests)
         .then((points) => {
           forestPoints = points;
@@ -270,6 +298,9 @@ function buildPanel(manifestLoading: Promise<Manifest>): Promise<SpeciesPanel> {
     console.error(err);
     const container = document.getElementById("panel");
     if (container) container.textContent = "Kunne ikke indlæse svampedata.";
+    // no list, so no ranking: the return card must not wait for one
+    if (pinLngLat) pinToday = "unavailable";
+    onPinChanged();
   });
   return building;
 }
@@ -399,6 +430,7 @@ function showLocation(lngLat: [number, number], label: string | undefined): void
   // Last, with the chip laid out as it will stay: the clear button, shown
   // just above, takes room from the name.
   fitChip();
+  onPinChanged();
 }
 
 /** The name the chip is showing a form of, or null with no pin. */
@@ -417,6 +449,8 @@ if ("ResizeObserver" in window) new ResizeObserver(fitChip).observe(readout);
 function clearPin(): void {
   pinLngLat = null;
   pinLabel = null;
+  pinToday = null;
+  resume.hide();
   writeStoredPin(null);
   panel?.setPin(null);
   locateGate.superseded(); // a position still on its way does not bring it back
@@ -449,6 +483,7 @@ new MutationObserver(() => {
   navigation?.record(); // a species page opened or closed: Back follows (nav.ts)
   if (view === from) return; // a re-render of the same view
   if (view === "detail") {
+    resume.hide(); // the card was about the list
     fullBeforeDetail = sheet.snap() === "full";
     panelEl.scrollTop = 0;
     sheet.snapTo("half");
@@ -468,6 +503,8 @@ function setPin(lngLat: [number, number], label?: string): void {
   // stands there: a pin moved elsewhere leaves no stale address in it.
   if (input.value && input.value !== label) input.value = "";
   forestOutlines?.request(lngLat[0], lngLat[1]); // before the pin is named
+  pinToday = panelFailed ? "unavailable" : null; // until the panel has scored the new spot
+  resume.hide(); // it was about the pin that was
   pinLabel = label ?? null;
   showLocation(lngLat, label);
   pinLngLat = lngLat;
@@ -736,6 +773,14 @@ const MAP_TAP_FAR_ZOOM = 9;
  * pin and to move it with a second tap. */
 const MAP_TAP_ZOOM = 10.5;
 
+/** Zoom in on a tap from too far out, keeping the tapped point under the
+ * finger's spot in view. (Never a zero-duration animation: see flyTo.) */
+function closeInOnTap(map: MapBundle["map"], lngLat: [number, number]): void {
+  const zoom = Math.max(MAP_TAP_ZOOM, map.getZoom() + 1);
+  if (prefersReducedMotion()) map.jumpTo({ center: lngLat, zoom });
+  else map.easeTo({ center: lngLat, zoom, duration: 800 });
+}
+
 function landWithPin(
   flow: "here" | "forests",
   source: PinSource | null,
@@ -848,6 +893,7 @@ const start = initStart({
   reloadManifest: reloadPayload,
   getPinLabel: () =>
     pinLngLat ? (readout.querySelector(".loc-title")?.textContent ?? "Nål på kortet") : null,
+  getPinToday: () => (pinToday && pinToday !== "unavailable" ? todayShort(pinToday) : null),
   locate,
   cancelLocate,
   searchForests,
@@ -855,6 +901,20 @@ const start = initStart({
   enter: enterFromStart,
   onViewChange: () => syncMapToStart({ ease: true }),
   onNavigate: () => navigation?.record(),
+});
+
+// The return card over the species list (resume.ts).
+const resume = initResume({
+  locate: triggerGeolocate,
+  openSpecies: (slug) => {
+    showTab("svampe");
+    void panelReady.then(
+      (p) => p.openSpecies(slug), // focuses the page's back button
+      () => {},
+    );
+  },
+  focusAfterClose: () =>
+    document.querySelector<HTMLElement>('#mobile-tabs button[aria-pressed="true"]')?.focus(),
 });
 
 // "Home": the wordmark (desktop), the mark in the search field (phone) and the
@@ -866,7 +926,17 @@ for (const button of document.querySelectorAll<HTMLElement>("[data-home]")) {
   });
 }
 
-if (storedPin) setPin(storedPin.lngLat, restoredLabel(storedPin.label));
+onPinChanged = () => {
+  start.refreshPin();
+  // (no model: the panel never ranks, so there will be nothing to sum up)
+  resume.setToday(panel !== null && appModelBundle === null ? "unavailable" : pinToday);
+};
+
+if (storedPin) {
+  setPin(storedPin.lngLat, restoredLabel(storedPin.label));
+  // Back on a pin from last time: say what it holds today (resume.ts).
+  resume.show();
+}
 // The inline script in index.html made the same call before the first paint;
 // this settles it (it differs only if what was stored turned out unusable).
 if (shouldShowStart(window.location.search, storedPin)) start.open();

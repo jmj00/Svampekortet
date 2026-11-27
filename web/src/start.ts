@@ -1,15 +1,18 @@
-// The start screen ("forside"): four ways into the app, each of which lands in
-// the main interface already set up for that task. It is a layer of the same
-// page, not a page of its own: the sidebar's content on wide screens (the map
-// stays live beside it), a sheet over the map on phones.
+// The start screen ("forside"). It asks the one thing the app needs before it
+// can answer: where. Position, search and the map sit together at the top of
+// the home view, so one tap (or a typed name) lands on today's ranking. Under
+// that, what is in season now as photos (an answer before any question), and
+// the two other ways in as rows. It is a layer of the same page, not a page of
+// its own: the sidebar's content on wide screens (the map stays live beside
+// it), a sheet over the map on phones.
 //
 // Three views, switched through data-start on #app (absent = closed):
-//   home     the four ways in, the way straight to the map, and the safety
+//   home     where (position / search / map), the season strip, the forests
+//            and species ways in, the way straight to the map, and the safety
 //            line pinned underneath
-//   place    "where?" for the two ways in that need a spot: use my position,
-//            search a forest or an address, or tap the map (on a phone this
-//            view is a card at the top, so the map below it is there to be
-//            tapped)
+//   place    for "here": a card at the top while the user taps the map (on a
+//            phone the home view lies over it); for "forests": where to start
+//            from, the same three ways as on the home view
 //   species  photo tiles of every species in the manifest, the ones in season
 //            first
 //
@@ -19,6 +22,7 @@
 
 import type { AddressCombobox } from "./addresscombo";
 import { h, icon } from "./dom";
+import { bindInstallButton } from "./install";
 import { isActiveQuery, resolveQuery } from "./keywords";
 import { attachPlaceSearch, type PlaceKind } from "./placesearch";
 import { seasonLabel } from "./season";
@@ -26,10 +30,11 @@ import { PHONE_LAYOUT } from "./sheet";
 import {
   initialOthers,
   MAX_FEATURED,
+  monthName,
   pickerOrder,
   pinSubline,
-  seasonEyebrow,
-  seasonLine,
+  dateEyebrow,
+  stripSpecies,
   type PickerOrder,
   type PickerSpecies,
 } from "./startstate";
@@ -60,6 +65,9 @@ export interface StartDeps {
   reloadManifest(): Promise<Manifest>;
   /** The current pin's name as the location chip shows it, or null without a pin. */
   getPinLabel(): string | null;
+  /** One line on today's conditions at the pin ("3 arter med gode forhold i
+   * dag"), or null while there is none to give. */
+  getPinToday(): string | null;
   /** Ask the browser for the position. "ok" means a pin was set from it. */
   locate(): Promise<LocateResult>;
   /** Give up on a position that has not arrived yet. */
@@ -70,7 +78,7 @@ export interface StartDeps {
     query: string,
     near?: [number, number],
   ): { name: string; lon: number; lat: number }[];
-  /** A forest or an address was chosen in the place step. */
+  /** A forest or an address was chosen in a place search of the layer. */
   onPlace(target: [number, number], text: string, kind: PlaceKind, zoom?: number): void;
   /** Go into the main interface. For a species the result says whether its
    * page could be opened; the layer stays up until it has. */
@@ -98,30 +106,33 @@ export interface StartScreen {
   /** Show a view as Back or Forward brings it back: opens the layer (as from
    * the map) if it is closed. */
   show(view: StartView, flow?: PlaceFlow): void;
+  /** The pin's name or today's line for it changed: redraw what shows them. */
+  refreshPin(): void;
+  /** A tap on the map from this far out should zoom in rather than set the
+   * pin: the "here" map step, or the home view beside a live map. */
+  wantsCloserTap(): boolean;
+  /** The map zoomed in on a tap that was too far out: say to tap again. */
+  zoomedIn(): void;
   /** Phone only: how much of the map the layer covers from the top and the
    * bottom, so the camera can aim at what is left. Null when it covers none
    * (closed, or beside the map on a wide screen). */
   mapCover(): { top: number; bottom: number } | null;
 }
 
-const PLACE_COPY: Record<PlaceFlow, { title: string; lead: string }> = {
-  here: {
-    title: "Hvor vil du lede?",
-    lead: "Så rangerer vi svampene efter forholdene dér i dag.",
-  },
-  forests: {
-    title: "Hvor tager du af sted fra?",
-    lead: "Så finder vi skovene i nærheden og rangerer dem efter dagens forhold.",
-  },
+const FOREST_COPY = {
+  title: "Hvor tager du af sted fra?",
+  lead: "Så finder vi skovene i nærheden og rangerer dem efter dagens forhold.",
 };
 
 const LOCATE_MESSAGES: Record<Exclude<LocateResult, "ok"> | "slow", string> = {
   denied:
-    "Vi fik ikke lov til at bruge din placering. Søg en skov eller en adresse i stedet, eller tryk på kortet.",
+    "Du har ikke givet lov til at bruge din placering. Søg en skov, en by eller en adresse i stedet – eller vælg på kortet.",
   unavailable:
-    "Vi kunne ikke finde din placering. Søg en skov eller en adresse i stedet, eller tryk på kortet.",
-  slow: "Det tager længere end ventet. Du kan også søge en skov eller en adresse, eller trykke på kortet.",
+    "Vi kunne ikke finde din placering. Søg en skov, en by eller en adresse i stedet – eller vælg på kortet.",
+  slow: "Det tager længere end ventet. Du kan også søge et sted eller vælge på kortet.",
 };
+
+const PLACE_PLACEHOLDER = "Søg skov, by eller adresse";
 
 const TITLE_IDS: Record<StartView, string> = {
   home: "start-title",
@@ -142,6 +153,8 @@ const ICON_BACK =
   '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M14.5 5.5 8 12l6.5 6.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const ICON_SEARCH =
   '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="6.25" fill="none" stroke="currentColor" stroke-width="1.75"/><path d="m20 20-4.4-4.4" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></svg>';
+const ICON_GRID =
+  '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><g fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.6"/></g></svg>';
 function svg(className: string, markup: string): HTMLSpanElement {
   const span = h("span", className);
   span.innerHTML = markup; // static markup from the constants above
@@ -170,6 +183,73 @@ function photo(className: string, url: string | null | undefined, px: number): H
   return box;
 }
 
+/** The parts of a "where?" block: the position button, what it says when it
+ * fails, and the place search. The home view has them in its markup; the
+ * forests step builds them (buildPlaceParts). */
+interface PlaceParts {
+  locate: HTMLButtonElement;
+  locateTitle: HTMLElement;
+  message: HTMLElement;
+  field: HTMLElement;
+  input: HTMLInputElement;
+  listbox: HTMLUListElement;
+  status: HTMLElement;
+}
+
+interface PlaceBlock {
+  /** Back to how it was first shown: no message, the button in front. */
+  reset(): void;
+  closeSearch(): void;
+}
+
+function buildPlaceParts(prefix: string): PlaceParts & { nodes: HTMLElement[] } {
+  const locate = h("button", "locate");
+  locate.type = "button";
+  const text = h("span", "locate__text");
+  const locateTitle = h("span", "locate__title", "Brug min placering");
+  text.append(
+    locateTitle,
+    h("span", "locate__why", "Kun til dagens vurdering – gemmes kun hos dig"),
+  );
+  const spinner = h("span", "locate__spinner");
+  spinner.setAttribute("aria-hidden", "true");
+  locate.append(icon("locate", "ic locate__icon"), text, spinner);
+
+  const message = h("p", "place__message");
+  message.setAttribute("role", "status");
+  message.hidden = true;
+
+  const field = h("div", "start-field place__field");
+  const input = h("input", "place__input");
+  input.type = "search";
+  input.id = `${prefix}-q`;
+  input.autocomplete = "off";
+  input.enterKeyHint = "search";
+  input.setAttribute("role", "combobox");
+  input.setAttribute("aria-expanded", "false");
+  input.setAttribute("aria-controls", `${prefix}-results`);
+  input.setAttribute("aria-autocomplete", "list");
+  const listbox = h("ul", "place__results");
+  listbox.id = `${prefix}-results`;
+  listbox.setAttribute("role", "listbox");
+  const status = h("p", "search-status");
+  status.id = `${prefix}-search-status`;
+  field.append(svg("start-field__icon", ICON_SEARCH), input, status, listbox);
+
+  const hint = h("p", "place__hint");
+  hint.append(icon("map", "ic"), h("span", undefined, "Du kan også vælge stedet på kortet."));
+  return {
+    locate,
+    locateTitle,
+    message,
+    field,
+    input,
+    listbox,
+    status,
+    nodes: [locate, message, field, hint],
+  };
+}
+
 export function initStart(deps: StartDeps): StartScreen {
   const { app } = deps;
   const root = document.getElementById("start") as HTMLElement;
@@ -180,8 +260,9 @@ export function initStart(deps: StartDeps): StartScreen {
     place: root.querySelector<HTMLElement>('[data-view="place"]') as HTMLElement,
     species: root.querySelector<HTMLElement>('[data-view="species"]') as HTMLElement,
   };
-  const homeTitle = document.getElementById("start-title") as HTMLElement;
-  const skipLabel = document.getElementById("start-skip-label") as HTMLElement;
+  const byId = (id: string): HTMLElement => document.getElementById(id) as HTMLElement;
+  const homeTitle = byId("start-title");
+  const skipLabel = byId("start-skip-label");
   const phone = window.matchMedia(PHONE_LAYOUT);
   const finePointer = window.matchMedia("(hover: hover) and (pointer: fine)");
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -192,11 +273,13 @@ export function initStart(deps: StartDeps): StartScreen {
   let manifest: Manifest | null = null;
   let manifestState: "loading" | "ready" | "failed" = "loading";
   let order: PickerOrder | null = null;
-  let combobox: AddressCombobox | null = null;
   let locateToken = 0;
   let locating = false;
   let hasPin = false;
   let transitionTimer: number | undefined;
+  /** The "where?" blocks alive now: the home view's, and the forests step's
+   * while it shows. */
+  const blocks = new Set<PlaceBlock>();
 
   // --- the layer itself -----------------------------------------------------
 
@@ -222,6 +305,7 @@ export function initStart(deps: StartDeps): StartScreen {
       // The region is named after the heading of the view it shows.
       root.setAttribute("aria-labelledby", TITLE_IDS[next]);
     }
+    if (next !== "home") endSearching();
     applyInert();
     deps.onNavigate?.();
   }
@@ -244,11 +328,17 @@ export function initStart(deps: StartDeps): StartScreen {
     locating = false;
   }
 
-  function goHome(focusOn?: HTMLElement | null): void {
+  /** Back to a fresh home view: no position on its way, no search open. */
+  function resetHome(): void {
     stopLocating();
-    combobox?.close();
+    homeZoom.hidden = true;
+    for (const block of blocks) block.reset();
     pending = null;
     refreshHome();
+  }
+
+  function goHome(focusOn?: HTMLElement | null): void {
+    resetHome();
     setView("home");
     deps.onViewChange();
     (focusOn ?? homeTitle).focus({ preventScroll: true });
@@ -271,157 +361,212 @@ export function initStart(deps: StartDeps): StartScreen {
     return bar;
   }
 
-  // --- home view: aware of the pin --------------------------------------------
+  // --- "where?": position and search -----------------------------------------
 
-  const pinAware = (["here", "forests"] as const).map((flow) => {
-    const sub = document.getElementById(`start-${flow}-sub`) as HTMLElement;
-    return {
-      sub,
-      fallback: sub.textContent ?? "",
-      item: sub.closest<HTMLElement>(".start__flow") as HTMLElement,
-      change: views.home.querySelector<HTMLElement>(`[data-change="${flow}"]`) as HTMLElement,
-    };
-  });
-
-  /** With a pin, the two cards that need a place go straight in for it: they
-   * name it, and offer "Skift sted" for another. */
-  function refreshHome(): void {
-    const label = deps.getPinLabel();
-    hasPin = label !== null;
-    for (const card of pinAware) {
-      card.sub.textContent = label === null ? card.fallback : pinSubline(label);
-      card.item.classList.toggle("has-pin", hasPin);
-      card.change.hidden = !hasPin;
-    }
-  }
-
-  // --- place step -----------------------------------------------------------
-
-  function showPlace(flow: PlaceFlow): void {
-    stopLocating();
-    combobox?.close();
-    pending = flow;
-    const copy = PLACE_COPY[flow];
-
-    const title = h("h2", "start__title start__title--step", copy.title);
-    title.id = "start-place-title";
-    title.tabIndex = -1;
-    const lead = h("p", "start__lead", copy.lead);
-
-    const options = h("div", "place");
-    const pinLabel = deps.getPinLabel();
-    if (pinLabel !== null) {
-      // Came here to change the place: staying with the pin is still an answer.
-      const usePin = h("button", "place__option");
-      usePin.type = "button";
-      const text = h("span", "place__option-text");
-      text.append(
-        h("span", "place__option-title", "Behold nålen"),
-        h("span", "place__option-sub", pinLabel),
-      );
-      usePin.append(icon("pin"), text);
-      usePin.addEventListener("click", () => void deps.enter({ kind: flow }));
-      options.append(usePin);
-    }
-
-    const locate = h("button", "place__option place__option--primary");
-    locate.type = "button";
-    const locateLabel = h("span", "place__option-title", "Brug min placering");
-    const spinner = h("span", "place__spinner");
-    spinner.setAttribute("aria-hidden", "true");
-    locate.append(icon("locate"), locateLabel, spinner);
-
-    const message = h("p", "place__message");
-    message.setAttribute("role", "status");
-    message.hidden = true;
+  /** Wire a "where?" block: the position button with its busy and failed
+   * states, and the place search. `onFail` runs after a failed position (the
+   * card may have grown). */
+  function wirePlace(parts: PlaceParts, onFail: () => void): PlaceBlock {
+    const { locate, locateTitle, message, field, input, listbox, status } = parts;
     const say = (key: keyof typeof LOCATE_MESSAGES | null): void => {
       message.hidden = key === null;
       message.textContent = key === null ? "" : LOCATE_MESSAGES[key];
       message.dataset.kind = key ?? "";
     };
-
-    const field = h("div", "start-field place__field");
-    const input = h("input", "place__input");
-    input.type = "search";
-    input.id = "start-q";
-    input.autocomplete = "off";
-    input.spellcheck = false;
-    input.enterKeyHint = "search";
-    input.setAttribute("role", "combobox");
-    input.setAttribute("aria-expanded", "false");
-    input.setAttribute("aria-controls", "start-results");
-    input.setAttribute("aria-autocomplete", "list");
-    const listbox = h("ul", "place__results");
-    listbox.id = "start-results";
-    listbox.setAttribute("role", "listbox");
-    // What became of a search that has nothing to list: said, not left blank.
-    const searchStatus = h("p", "search-status");
-    searchStatus.id = "start-search-status";
-    field.append(svg("start-field__icon", ICON_SEARCH), input, searchStatus, listbox);
     // (placesearch.ts: the same search as the main interface's own field)
-    combobox = attachPlaceSearch({
+    const combobox: AddressCombobox = attachPlaceSearch({
       input,
       listbox,
-      status: searchStatus,
+      status,
       enterPicksFirst: true,
       searchForests: deps.searchForests,
       onPlace: deps.onPlace,
     });
+    input.placeholder = PLACE_PLACEHOLDER;
+    input.setAttribute("aria-label", PLACE_PLACEHOLDER);
 
-    const or = h("p", "place__or", "eller");
-    or.setAttribute("aria-hidden", "true");
-    const hint = h("p", "place__hint");
-    hint.append(
-      icon("map"),
-      h("span", undefined, "Du kan også trykke på kortet og vælge stedet dér."),
-    );
+    const idle = (): void => {
+      delete locate.dataset.state;
+      locate.removeAttribute("aria-disabled");
+      locateTitle.textContent = "Brug min placering";
+    };
 
     locate.addEventListener("click", () => {
       if (locating) return;
       locating = true;
       const token = ++locateToken;
       say(null);
-      or.hidden = false;
+      field.classList.remove("is-suggested");
       locate.dataset.state = "busy";
       locate.setAttribute("aria-disabled", "true");
-      locateLabel.textContent = "Finder din placering …";
+      locateTitle.textContent = "Finder din placering …";
       const slow = window.setTimeout(() => {
         if (token === locateToken) say("slow");
       }, LOCATE_SLOW_MS);
       void deps.locate().then((result) => {
         window.clearTimeout(slow);
-        if (token !== locateToken) return; // left the step, or asked again
+        if (token !== locateToken) return; // left the view, or asked again
         locating = false;
-        delete locate.dataset.state;
-        locate.removeAttribute("aria-disabled");
-        locateLabel.textContent = "Brug min placering";
+        idle();
         if (result === "ok") return; // main.ts has the pin and lands the flow
         say(result);
         // The search field is the way forward now: the button steps back
         // (it still works, for when the permission has been changed).
         locate.dataset.state = "failed";
-        or.hidden = true;
         field.classList.add("is-suggested");
-        deps.onViewChange(); // the card grew: keep the map's middle below it
+        onFail();
         // With a keyboard the next step is to type; on a touch screen focusing
         // the field would throw the keyboard over the message just shown.
         if (finePointer.matches) input.focus({ preventScroll: true });
       });
     });
 
-    options.append(locate, message, or, field, hint);
-    views.place.replaceChildren(title, backButton(flow), lead, options);
+    const block: PlaceBlock = {
+      reset(): void {
+        combobox.close();
+        idle();
+        say(null);
+        field.classList.remove("is-suggested");
+      },
+      closeSearch: () => combobox.close(),
+    };
+    blocks.add(block);
+    return block;
+  }
+
+  // The home view's block is in the markup, so it paints with the page.
+  const homeParts: PlaceParts = {
+    locate: byId("start-locate") as HTMLButtonElement,
+    locateTitle: views.home.querySelector<HTMLElement>(".locate__title") as HTMLElement,
+    message: byId("start-locate-message"),
+    field: views.home.querySelector<HTMLElement>(".place__field") as HTMLElement,
+    input: byId("start-q") as HTMLInputElement,
+    listbox: byId("start-results") as HTMLUListElement,
+    status: byId("start-search-status"),
+  };
+  wirePlace(homeParts, () => deps.onViewChange());
+
+  // Phone: typing in the home view's search raises the layer to the top of
+  // the screen, and what stood above the field steps aside (start.css), so
+  // the suggestions have the room above the keyboard.
+  const homeField = homeParts.field;
+  function endSearching(): void {
+    if (root.dataset.searching === undefined) return;
+    delete root.dataset.searching;
+  }
+  homeParts.input.addEventListener("focus", () => {
+    if (!phone.matches || view !== "home") return;
+    root.dataset.searching = "";
+    scroller.scrollTop = 0;
+  });
+  homeField.addEventListener("focusout", () => {
+    // a tap on a suggestion moves focus inside the field's box, or lands the flow
+    window.setTimeout(() => {
+      if (!homeField.contains(document.activeElement)) endSearching();
+    }, 200);
+  });
+
+  // --- home view: aware of the pin --------------------------------------------
+
+  const resume = byId("start-resume") as HTMLButtonElement;
+  const resumeTitle = byId("start-resume-title");
+  const resumeSub = byId("start-resume-sub");
+  const resumeOr = byId("start-resume-or");
+  const lead = byId("start-lead");
+  const forestsSub = byId("start-forests-sub");
+  const forestsFallback = forestsSub.textContent ?? "";
+  // Offered on a first visit too (the owner's choice), wherever the app can
+  // be installed (install.ts).
+  bindInstallButton(byId("start-install") as HTMLButtonElement);
+
+  /** With a pin, the home view leads with it: "continue there", with today's
+   * line, before the ways to choose another place. */
+  function refreshHome(): void {
+    const label = deps.getPinLabel();
+    hasPin = label !== null;
+    resume.hidden = !hasPin;
+    resumeOr.hidden = !hasPin;
+    lead.hidden = hasPin;
+    if (label !== null) {
+      resumeTitle.textContent = pinSubline(label);
+      resumeSub.textContent = deps.getPinToday() ?? "Se dagens forhold for svampene dér";
+      resume.setAttribute(
+        "aria-label",
+        `Fortsæt ved din nål: ${resumeTitle.textContent}. ${resumeSub.textContent}`,
+      );
+    }
+    forestsSub.textContent = hasPin ? "De bedste skove omkring din nål i dag" : forestsFallback;
+  }
+
+  // --- place step -----------------------------------------------------------
+
+  /** "Zoomed in, tap again": in the "here" map step, and on the home view
+   * beside the map (sidebar layout). */
+  const pickZoom = h("p", "place__zoom");
+  pickZoom.setAttribute("role", "status");
+  const homeZoom = byId("start-zoom");
+
+  let stepBlock: PlaceBlock | null = null;
+
+  function showPlace(flow: PlaceFlow): void {
+    stopLocating();
+    for (const block of blocks) block.closeSearch();
+    if (stepBlock) blocks.delete(stepBlock);
+    stepBlock = null;
+    pending = flow;
+
+    const title = h("h2", "start__title start__title--step");
+    title.id = "start-place-title";
+    title.tabIndex = -1;
+    if (flow === "here") {
+      // The home view had the position and the search: this step is the map.
+      const verb = phone.matches ? "Tryk" : "Klik";
+      title.textContent = `${verb} på kortet, hvor du vil lede`;
+      const lead = h(
+        "p",
+        "start__lead",
+        "Zoom ind, så du rammer den rigtige skov. Så vurderer vi dagens forhold dér.",
+      );
+      pickZoom.hidden = true;
+      views.place.replaceChildren(title, backButton("pick"), lead, pickZoom);
+      views.place.dataset.flow = "here";
+    } else {
+      title.textContent = FOREST_COPY.title;
+      const lead = h("p", "start__lead", FOREST_COPY.lead);
+      const options = h("div", "place");
+      const pinLabel = deps.getPinLabel();
+      if (pinLabel !== null) {
+        // Came here to change the place: staying with the pin is still an answer.
+        const usePin = h("button", "resume");
+        usePin.type = "button";
+        const text = h("span", "resume__text");
+        text.append(
+          h("span", "resume__title", "Behold nålen"),
+          h("span", "resume__sub", pinSubline(pinLabel)),
+        );
+        usePin.append(icon("pin", "ic resume__icon"), text, icon("chevron", "ic resume__chevron"));
+        usePin.addEventListener("click", () => void deps.enter({ kind: flow }));
+        options.append(usePin);
+      }
+      const parts = buildPlaceParts("start-ff");
+      stepBlock = wirePlace(parts, () => deps.onViewChange());
+      options.append(...parts.nodes);
+      views.place.replaceChildren(title, backButton(flow), lead, options);
+      views.place.dataset.flow = "forests";
+    }
     setView("place");
     deps.onViewChange();
     title.focus({ preventScroll: true });
   }
 
-  // --- species step ---------------------------------------------------------
+  // --- species: the strip on the home view, and the picker step ----------------
 
   const tiles = new Map<string, HTMLButtonElement>();
   const picker = h("div", "picker");
   const pickerStatus = h("p", "picker__status");
   const pickerSearch = h("input", "picker__input");
+  const strip = byId("start-strip");
+  const stripStatus = byId("start-strip-status");
   let pickerBuilt = false;
   let pickerExpanded = false;
   let choosing = false;
@@ -451,26 +596,31 @@ export function initStart(deps: StartDeps): StartScreen {
     const meta = tileMeta(item);
     if (meta) text.append(meta);
     button.append(photo("tile__photo", item.species.thumbnail, featured ? 96 : 120), text);
-    button.addEventListener("click", () => void choose(item, button));
+    button.addEventListener("click", () => void choose(item, button, pickerStatus));
     tiles.set(key, button);
     return button;
   }
 
-  async function choose(item: PickerSpecies, button: HTMLButtonElement): Promise<void> {
+  /** Open a species' page; on failure say so in `status`. */
+  async function choose(
+    item: PickerSpecies,
+    button: HTMLButtonElement,
+    status: HTMLElement,
+  ): Promise<void> {
     if (choosing) return;
     choosing = true;
-    pickerStatus.hidden = true;
-    pickerStatus.removeAttribute("role");
+    status.hidden = true;
+    status.removeAttribute("role");
     button.dataset.state = "loading";
     button.setAttribute("aria-busy", "true");
     const ok = await deps.enter({ kind: "species", slug: item.species.slug });
     choosing = false;
     delete button.dataset.state;
     button.removeAttribute("aria-busy");
-    if (ok === false && view === "species") {
-      pickerStatus.textContent = `Kunne ikke hente ${item.species.danish_name}. Tjek forbindelsen, og prøv igen.`;
-      pickerStatus.setAttribute("role", "alert");
-      pickerStatus.hidden = false;
+    if (ok === false && view !== null) {
+      status.textContent = `Kunne ikke hente ${item.species.danish_name}. Tjek forbindelsen, og prøv igen.`;
+      status.setAttribute("role", "alert");
+      status.hidden = false;
     }
   }
 
@@ -619,7 +769,7 @@ export function initStart(deps: StartDeps): StartScreen {
       event.preventDefault();
       const [first] = matches() ?? [];
       pickerSearch.blur();
-      if (first) void choose(first, tile(first, false));
+      if (first) void choose(first, tile(first, false), pickerStatus);
     });
     field.append(svg("start-field__icon", ICON_SEARCH), pickerSearch);
 
@@ -639,37 +789,67 @@ export function initStart(deps: StartDeps): StartScreen {
       ?.focus({ preventScroll: true });
   }
 
+  /** One photo of the strip: the photo, the name, and where it is in its season. */
+  function stripTile(item: PickerSpecies): HTMLElement {
+    const li = h("li", "strip__item");
+    const button = h("button", "strip__tile");
+    button.type = "button";
+    button.dataset.slug = item.species.slug;
+    const text = h("span", "strip__text");
+    text.append(h("span", "strip__name", item.species.danish_name));
+    const label = seasonLabel(item.season);
+    if (label) {
+      const meta = h("span", "strip__meta", label);
+      meta.dataset.season = item.season.state;
+      text.append(meta);
+      // the name and the season as two words, not run together
+      button.setAttribute("aria-label", `${item.species.danish_name}, ${label.toLowerCase()}`);
+    }
+    button.append(photo("strip__photo", item.species.thumbnail, 96), text);
+    button.addEventListener("click", () => void choose(item, button, stripStatus));
+    li.append(button);
+    return li;
+  }
+
+  function fillStrip(): void {
+    if (!manifest || !order) return;
+    const { inSeason, items } = stripSpecies(order);
+    byId("start-season-title").textContent = inSeason
+      ? `I sæson i ${monthName(month)}`
+      : "Ingen i sæson lige nu";
+    // With nothing in season, the list is for looking ahead, unfiltered.
+    byId("start-season-all").textContent = inSeason ? "Se dem i listen" : "Se hvornår";
+    byId("start-season-all")
+      .closest("button")
+      ?.setAttribute(
+        "aria-label",
+        inSeason ? "Se arterne i sæson i listen" : "Se alle arter og deres sæson i listen",
+      );
+    const all = h("li", "strip__item");
+    const allButton = h("button", "strip__tile strip__tile--all");
+    allButton.type = "button";
+    allButton.dataset.flow = "species";
+    allButton.setAttribute("aria-label", `Alle ${manifest.species.length} arter: søg og vælg`);
+    const allText = h("span", "strip__text");
+    allText.append(
+      h("span", "strip__name", `Alle ${manifest.species.length} arter`),
+      h("span", "strip__meta", "Søg og vælg"),
+    );
+    allButton.append(svg("strip__photo strip__photo--all", ICON_GRID), allText);
+    all.append(allButton);
+    strip.replaceChildren(...items.map(stripTile), all);
+    strip.removeAttribute("aria-busy");
+  }
+
   // --- home view: what the manifest adds --------------------------------------
 
   function fillHome(): void {
     if (!manifest || !order) return;
-    const { inSeason, others } = order;
-    (document.getElementById("start-eyebrow") as HTMLElement).textContent = seasonEyebrow(
-      month,
-      inSeason.length,
-    );
-    (document.getElementById("start-season-line") as HTMLElement).textContent = seasonLine(
-      inSeason.map((p) => p.species.danish_name),
-      month,
-    );
-
-    // "Hvor finder jeg ...?": the first species of the picker, and how many more.
-    const withPhoto = [...inSeason, ...others].filter((p) => p.species.thumbnail);
-    const thumbs = document.getElementById("start-thumbs") as HTMLElement;
-    const shown = withPhoto.slice(0, 3);
-    thumbs.replaceChildren(...shown.map((p) => photo("flow__thumb", p.species.thumbnail, 48)));
-    const rest = manifest.species.length - shown.length;
-    if (shown.length > 0 && rest > 0)
-      thumbs.append(h("span", "flow__thumb flow__thumb--more", `+${rest}`));
-
-    // "Hvad er i sæson?": the species themselves, when there are any.
-    const seasonal = inSeason.filter((p) => p.species.thumbnail).slice(0, 2);
-    if (seasonal.length > 0) {
-      const art = document.getElementById("start-season-art") as HTMLElement;
-      art.classList.add("flow__icon--photos");
-      art.replaceChildren(...seasonal.map((p) => photo("flow__thumb", p.species.thumbnail, 40)));
-    }
+    fillStrip();
   }
+
+  // "i dag" in the headline is this day: say which (it needs no data).
+  byId("start-eyebrow").textContent = dateEyebrow(new Date());
 
   function watchManifest(loading: Promise<Manifest>): void {
     loading.then(
@@ -682,6 +862,9 @@ export function initStart(deps: StartDeps): StartScreen {
       },
       () => {
         manifestState = "failed";
+        // The strip has nothing to show: the species step says why and retries.
+        strip.replaceChildren();
+        strip.removeAttribute("aria-busy");
         if (view === "species") renderPickerBody();
       },
     );
@@ -692,18 +875,19 @@ export function initStart(deps: StartDeps): StartScreen {
 
   views.home.addEventListener("click", (event) => {
     const target = event.target as HTMLElement;
-    const change = target.closest<HTMLElement>("[data-change]")?.dataset.change;
-    if (change === "here" || change === "forests") {
-      showPlace(change);
-      return;
-    }
     const flow = target.closest<HTMLElement>("[data-flow]")?.dataset.flow;
     switch (flow) {
       case "here":
+        // the "continue at your pin" card
+        if (hasPin && deps.getPinLabel() !== null) void deps.enter({ kind: "here" });
+        break;
+      case "pick":
+        showPlace("here");
+        break;
       case "forests":
         // With a pin the question "where?" is already answered.
-        if (hasPin && deps.getPinLabel() !== null) void deps.enter({ kind: flow });
-        else showPlace(flow);
+        if (hasPin && deps.getPinLabel() !== null) void deps.enter({ kind: "forests" });
+        else showPlace("forests");
         break;
       case "species":
         showSpecies();
@@ -717,9 +901,9 @@ export function initStart(deps: StartDeps): StartScreen {
     }
   });
 
-  /** One step back, to the card that led here. */
+  /** One step back, to what led here. */
   function stepBack(): void {
-    if (view === "place") goHome(flowButton(pending ?? "here"));
+    if (view === "place") goHome(flowButton(pending === "forests" ? "forests" : "pick"));
     else if (view === "species") goHome(flowButton("species"));
   }
 
@@ -730,6 +914,12 @@ export function initStart(deps: StartDeps): StartScreen {
     if (event.target === pickerSearch && pickerSearch.value !== "") {
       pickerSearch.value = ""; // first Escape empties the search, as the field itself would
       renderPicker();
+      return;
+    }
+    if (event.target === homeParts.input && homeParts.input.value !== "") {
+      // the same for the place search on the home view (and its message goes)
+      homeParts.input.value = "";
+      homeParts.input.dispatchEvent(new Event("input"));
       return;
     }
     if (view === "home") void deps.enter({ kind: "map" });
@@ -746,6 +936,7 @@ export function initStart(deps: StartDeps): StartScreen {
 
   phone.addEventListener("change", () => {
     if (view === null) return;
+    endSearching();
     applyInert();
     deps.onViewChange();
   });
@@ -756,10 +947,7 @@ export function initStart(deps: StartDeps): StartScreen {
     ignoresMapClicks: () => view === "species",
     open(options): void {
       const fromMain = options?.fromMain ?? false;
-      stopLocating();
-      combobox?.close();
-      pending = null;
-      refreshHome();
+      resetHome();
       skipLabel.textContent = fromMain ? SKIP_LABEL.back : SKIP_LABEL.fresh;
       const wasOpen = view !== null;
       setView("home");
@@ -772,7 +960,7 @@ export function initStart(deps: StartDeps): StartScreen {
       const wasOpen = view !== null;
       locateToken++; // a position still on its way belongs to the main interface now
       locating = false;
-      combobox?.close();
+      for (const block of blocks) block.reset();
       pending = null;
       setView(null);
       transition(wasOpen ? "leaving" : null);
@@ -780,10 +968,7 @@ export function initStart(deps: StartDeps): StartScreen {
     current: () => ({ view, flow: view === "place" ? pending : null }),
     show(next, flow): void {
       if (view === null) {
-        stopLocating();
-        combobox?.close();
-        pending = null;
-        refreshHome();
+        resetHome();
         skipLabel.textContent = SKIP_LABEL.back;
         setView("home");
         transition("entering");
@@ -791,6 +976,17 @@ export function initStart(deps: StartDeps): StartScreen {
       if (next === "home") goHome();
       else if (next === "place") showPlace(flow ?? "here");
       else showSpecies();
+    },
+    refreshPin(): void {
+      if (view !== null) refreshHome();
+    },
+    wantsCloserTap: () =>
+      (view === "place" && pending === "here") || (view === "home" && !phone.matches),
+    zoomedIn(): void {
+      const verb = phone.matches ? "Tryk" : "Klik";
+      const box = view === "place" ? pickZoom : homeZoom;
+      box.textContent = `Vi har zoomet ind. ${verb} igen dér, hvor du vil lede.`;
+      box.hidden = false;
     },
     mapCover(): { top: number; bottom: number } | null {
       if (view === null || !phone.matches) return null;

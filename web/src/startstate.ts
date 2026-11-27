@@ -180,27 +180,13 @@ const MONTHS = [
 
 export const monthName = (month: number): string => MONTHS[((month % 12) + 12) % 12];
 
-/** The line above the headline: "November · 3 arter i sæson". */
-export function seasonEyebrow(month: number, inSeasonCount: number): string {
-  const name = monthName(month);
-  const capitalised = name.charAt(0).toUpperCase() + name.slice(1);
-  if (inSeasonCount === 0) return capitalised;
-  return `${capitalised} · ${inSeasonCount} ${inSeasonCount === 1 ? "art" : "arter"} i sæson`;
-}
+const WEEKDAYS = ["søndag", "mandag", "tirsdag", "onsdag", "torsdag", "fredag", "lørdag"];
 
-/** The second line of the "Hvad er i sæson?" card. */
-export function seasonLine(inSeasonNames: readonly string[], month: number): string {
-  const [first, second] = inSeasonNames;
-  switch (inSeasonNames.length) {
-    case 0:
-      return "Se, hvornår på året hver art har sæson.";
-    case 1:
-      return `${first} er i sæson nu.`;
-    case 2:
-      return `${first} og ${second} er i sæson nu.`;
-    default:
-      return `${inSeasonNames.length} arter er i sæson her i ${monthName(month)}.`;
-  }
+/** The line above "Hvad kan jeg finde her i dag?": which day that is, as a
+ * forecast names it ("Fredag 27. november"). */
+export function dateEyebrow(date: Date): string {
+  const day = WEEKDAYS[date.getDay()];
+  return `${day.charAt(0).toUpperCase()}${day.slice(1)} ${date.getDate()}. ${monthName(date.getMonth())}`;
 }
 
 // --- the pin on the home view ----------------------------------------------
@@ -209,11 +195,129 @@ export function seasonLine(inSeasonNames: readonly string[], month: number): str
  * location chip's own names do not all read well after "ved". */
 export function pinSubline(label: string): string {
   const name = label.trim();
-  if (/^ved\s/i.test(name)) return name;
+  // "Ved Vesterskov", "I Mølleskov i Rold Skov": already a place phrase
+  if (/^(ved|i)\s/i.test(name)) return name.charAt(0).toUpperCase() + name.slice(1);
   if (name === MY_LOCATION_LABEL) return "Ved din placering";
   if (name === RESTORED_LOCATION_LABEL) return "Ved din seneste placering";
   if (name === "" || name === "Nål på kortet") return "Ved nålen på kortet";
   return `Ved ${name}`;
+}
+
+// --- today at the pin ------------------------------------------------------
+
+/** From this score on a species has "gode" conditions (scoreBand, score.ts). */
+export const GOOD_SCORE = 60;
+
+export interface ScoredName {
+  name: string;
+  /** 0-100 */
+  value: number;
+  /** For opening the species from the sentence that names it. */
+  slug?: string;
+}
+
+export interface TodayAtPin {
+  /** How many species have good conditions. */
+  good: number;
+  /** The best-scoring species, rounded as the list shows it. */
+  best: ScoredName | null;
+}
+
+/** Sum up a finished ranking at the pin. A ranking that scored nothing (the
+ * species files could not be fetched, offline) is "unavailable": there will
+ * be nothing to wait for. */
+export function todayAtPin(scored: readonly ScoredName[]): TodayAtPin | "unavailable" {
+  if (scored.length === 0) return "unavailable";
+  let best: ScoredName | null = null;
+  let good = 0;
+  for (const { name, value, slug } of scored) {
+    const rounded = Math.round(value);
+    if (rounded >= GOOD_SCORE) good++;
+    if (!best || rounded > best.value)
+      best = slug === undefined ? { name, value: rounded } : { name, value: rounded, slug };
+  }
+  return { good, best };
+}
+
+/** What the return card says while there is no summary, and when there will
+ * be none. */
+export const TODAY_LOADING = "vurderer forholdene …";
+export const TODAY_UNAVAILABLE = "Dagens forhold kunne ikke beregnes lige nu.";
+
+const arter = (n: number): string => (n === 1 ? "1 art" : `${n} arter`);
+
+/** Short, under the pin's name on the start screen: "3 arter med gode
+ * forhold i dag". */
+export function todayShort(today: TodayAtPin): string {
+  return today.good === 0
+    ? "Ingen arter med gode forhold i dag"
+    : `${arter(today.good)} med gode forhold i dag`;
+}
+
+/** The sentence of the return card, after "I dag ved din nål:", in three
+ * parts so the best species' name can be a link: `before` + name + `after`.
+ * Without a best species the whole sentence is in `before`. */
+export function todayParts(today: TodayAtPin): {
+  before: string;
+  best: ScoredName | null;
+  after: string;
+} {
+  const best = today.best;
+  if (!best) return { before: `${todayShort(today)}.`, best: null, after: "" };
+  if (today.good === 0)
+    return { before: "Ingen arter har gode forhold. Bedst er ", best, after: ` (${best.value}).` };
+  if (today.good === 1) return { before: "", best, after: ` har gode forhold (${best.value}).` };
+  return {
+    before: `${arter(today.good)} har gode forhold – bedst er `,
+    best,
+    after: ` (${best.value}).`,
+  };
+}
+
+/** The same sentence as plain text. */
+export function todayLong(today: TodayAtPin): string {
+  const { before, best, after } = todayParts(today);
+  return `${before}${best?.name ?? ""}${after}`;
+}
+
+// --- the season strip on the home view ---------------------------------------
+
+/** At most this many species in the strip (the last tile leads to them all). */
+export const STRIP_MAX = 8;
+
+/** The species for the strip: those in season now, or, in a month with none,
+ * the ones nearest to theirs (`inSeason` false: the strip says so). */
+export function stripSpecies(order: PickerOrder): {
+  inSeason: boolean;
+  items: PickerSpecies[];
+} {
+  const inSeason = order.inSeason.length > 0;
+  const pool = inSeason ? order.inSeason : order.others;
+  return { inSeason, items: varied(pool).slice(0, STRIP_MAX) };
+}
+
+/** The kind a Danish name names: its last word ("Violet Hekseringshat" is a
+ * hekseringshat). */
+const kindOf = (name: string): string =>
+  (
+    name
+      .trim()
+      .split(/[\s-]+/)
+      .pop() ?? ""
+  ).toLocaleLowerCase("da");
+
+/** Keep the order, but let each kind lead once before its relatives follow:
+ * three hekseringshatte in a row look like one photo three times. */
+export function varied(items: readonly PickerSpecies[]): PickerSpecies[] {
+  const seen = new Set<string>();
+  const first: PickerSpecies[] = [];
+  const later: PickerSpecies[] = [];
+  for (const item of items) {
+    const kind = kindOf(item.species.danish_name);
+    (seen.has(kind) ? later : first).push(item);
+    seen.add(kind);
+  }
+  return [...first, ...later];
 }
 
 // --- named forests for the place search --------------------------------------

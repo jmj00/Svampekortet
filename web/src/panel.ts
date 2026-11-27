@@ -33,6 +33,9 @@ export class SpeciesPanel {
   private rankScores: Map<string, Conditions> | null = null; // for the current pin
   private lastOpenedSlug: string | null = null; // for returning focus to its row
   private readonly list: SpeciesListView;
+  /** The ranking at a new pin is done (the start screen and the return card
+   * sum it up); an empty map when it failed. */
+  onRank: ((scores: Map<string, Conditions>) => void) | null = null;
 
   constructor(
     private readonly container: HTMLElement,
@@ -110,10 +113,18 @@ export class SpeciesPanel {
     if (!this.pin || !this.modelBundle) return;
     const token = ++this.rankToken;
     const [lon, lat] = this.pin;
-    const scores = await rankHere(this.manifest, this.modelBundle, lon, lat, new Date());
+    let scores: Map<string, Conditions>;
+    try {
+      scores = await rankHere(this.manifest, this.modelBundle, lon, lat, new Date());
+    } catch (err) {
+      console.error("could not rank the species at the pin", err);
+      if (token === this.rankToken) this.onRank?.(new Map()); // nothing to wait for
+      return;
+    }
     if (token !== this.rankToken) return; // pin moved while loading
     this.rankScores = scores;
     this.list.setRank(true, scores);
+    this.onRank?.(scores);
   }
 
   private renderList(): void {

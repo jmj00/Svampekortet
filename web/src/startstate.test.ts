@@ -11,10 +11,16 @@ import {
   PIN_STORAGE_KEY,
   readStoredPin,
   restoredLabel,
-  seasonEyebrow,
-  seasonLine,
+  dateEyebrow,
   serializePin,
   shouldShowStart,
+  STRIP_MAX,
+  stripSpecies,
+  todayAtPin,
+  todayLong,
+  todayParts,
+  todayShort,
+  varied,
   writeStoredPin,
 } from "./startstate";
 import type { SpeciesSummary } from "./types";
@@ -192,26 +198,117 @@ describe("initialOthers", () => {
   });
 });
 
-describe("sentences from the manifest", () => {
-  it("writes the line above the headline", () => {
-    expect(seasonEyebrow(NOVEMBER, 1)).toBe("November · 1 art i sæson");
-    expect(seasonEyebrow(SEPTEMBER, 15)).toBe("September · 15 arter i sæson");
-    expect(seasonEyebrow(1, 0)).toBe("Februar");
+describe("the line above the headline", () => {
+  it("names the day the way a forecast does", () => {
+    expect(dateEyebrow(new Date(2026, 10, 27))).toBe("Fredag 27. november");
+    expect(dateEyebrow(new Date(2027, 0, 3))).toBe("Søndag 3. januar");
+  });
+});
+
+describe("today at the pin", () => {
+  const scored = [
+    { name: "Almindelig Østershat", value: 62.6 },
+    { name: "Almindelig Judasøre", value: 64.2 },
+    { name: "Trompetsvamp", value: 25 },
+  ];
+
+  it("counts the good ones and names the best, rounded as the list shows it", () => {
+    expect(todayAtPin(scored)).toEqual({
+      good: 2,
+      best: { name: "Almindelig Judasøre", value: 64 },
+    });
   });
 
-  it("names one or two species and counts more", () => {
-    expect(seasonLine([], 1)).toBe("Se, hvornår på året hver art har sæson.");
-    expect(seasonLine(["Tragt-Kantarel"], NOVEMBER)).toBe("Tragt-Kantarel er i sæson nu.");
-    expect(seasonLine(["A", "B"], NOVEMBER)).toBe("A og B er i sæson nu.");
-    expect(seasonLine(new Array<string>(15).fill("x"), SEPTEMBER)).toBe(
-      "15 arter er i sæson her i september.",
+  it("calls a ranking that scored nothing unavailable, not still loading", () => {
+    // rankHere drops every species it could not fetch: offline, that is all of them
+    expect(todayAtPin([])).toBe("unavailable");
+  });
+
+  it("keeps the best one's slug, to open it from the sentence", () => {
+    expect(todayAtPin([{ name: "A", value: 70, slug: "a" }])).toEqual({
+      good: 1,
+      best: { name: "A", value: 70, slug: "a" },
+    });
+  });
+
+  it("counts a score that rounds up to the line as good", () => {
+    const good = (value: number): number | undefined => {
+      const today = todayAtPin([{ name: "A", value }]);
+      return today === "unavailable" ? undefined : today.good;
+    };
+    expect(good(59.6)).toBe(1);
+    expect(good(59.4)).toBe(0);
+  });
+
+  it("says it in a line for the start screen", () => {
+    expect(todayShort({ good: 2, best: null })).toBe("2 arter med gode forhold i dag");
+    expect(todayShort({ good: 1, best: null })).toBe("1 art med gode forhold i dag");
+    expect(todayShort({ good: 0, best: null })).toBe("Ingen arter med gode forhold i dag");
+  });
+
+  it("and in a sentence for the return card", () => {
+    const best = { name: "Almindelig Judasøre", value: 64 };
+    expect(todayLong({ good: 2, best })).toBe(
+      "2 arter har gode forhold – bedst er Almindelig Judasøre (64).",
     );
+    expect(todayParts({ good: 2, best })).toEqual({
+      before: "2 arter har gode forhold – bedst er ",
+      best,
+      after: " (64).",
+    });
+    expect(todayLong({ good: 1, best })).toBe("Almindelig Judasøre har gode forhold (64).");
+    expect(todayLong({ good: 0, best: { name: "Trompetsvamp", value: 25 } })).toBe(
+      "Ingen arter har gode forhold. Bedst er Trompetsvamp (25).",
+    );
+  });
+});
+
+describe("the season strip", () => {
+  const named = (name: string, byMonth: number[]): SpeciesSummary => ({
+    ...species(name.toLowerCase().replace(/ /g, "-"), byMonth, 100),
+    danish_name: name,
+  });
+
+  it("lets each kind lead once before its relatives", () => {
+    const order = pickerOrder(
+      [
+        named("Bleg Hekseringshat", [0, 0, 0, 0, 0, 0, 0, 0, 10, 50, 100, 40]),
+        named("Violet Hekseringshat", [0, 0, 0, 0, 0, 0, 0, 0, 10, 60, 90, 40]),
+        named("Almindelig Østershat", [20, 10, 0, 0, 0, 0, 0, 0, 10, 50, 80, 60]),
+      ],
+      NOVEMBER,
+    );
+    expect(varied(order.inSeason).map((p) => p.species.danish_name)).toEqual([
+      "Bleg Hekseringshat",
+      "Almindelig Østershat",
+      "Violet Hekseringshat",
+    ]);
+  });
+
+  it("shows what is in season, or what comes next in a month without", () => {
+    const list = [
+      species("karl-johan", KARL_JOHAN, 3013),
+      species("tragt-kantarel", TRAGT_KANTAREL, 1510),
+    ];
+    const november = stripSpecies(pickerOrder(list, NOVEMBER));
+    expect(november.inSeason).toBe(true);
+    expect(november.items.map((p) => p.species.slug)).toEqual(["tragt-kantarel"]);
+    const april = stripSpecies(pickerOrder(list, 3));
+    expect(april.inSeason).toBe(false);
+    expect(april.items).toHaveLength(2);
+  });
+
+  it("keeps to its length", () => {
+    const many = Array.from({ length: 20 }, (_, i) => species(`s${i}`, KANTAREL, 10));
+    expect(stripSpecies(pickerOrder(many, SEPTEMBER)).items).toHaveLength(STRIP_MAX);
   });
 });
 
 describe("pinSubline", () => {
   it("puts 'ved' in front of a name that lacks it", () => {
     expect(pinSubline("Ved Vesterskov")).toBe("Ved Vesterskov");
+    expect(pinSubline("I Mølleskov i Rold Skov")).toBe("I Mølleskov i Rold Skov");
+    expect(pinSubline("ved Rold")).toBe("Ved Rold");
     expect(pinSubline("Rold Skov")).toBe("Ved Rold Skov");
     expect(pinSubline("Rådhuspladsen 1, 1550 København V")).toBe(
       "Ved Rådhuspladsen 1, 1550 København V",
