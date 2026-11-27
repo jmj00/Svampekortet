@@ -2022,6 +2022,7 @@
 /* The best species' name: a link-like button with a 44px target. */
 .rc__species {
   position: relative;
+  z-index: 1; /* over the link row, should the two ever meet */
   display: inline;
   padding: 0;
   border: none;
@@ -2036,10 +2037,13 @@
   cursor: pointer;
 }
 
+/* Its target grows upward only (over the plain text of the line above):
+   below it is the link row, whose targets grow downward only, so no point
+   of the name reaches "Brug min placering" and the other way round. */
 .rc__species::after {
   content: "";
   position: absolute;
-  inset: -0.75rem -0.25rem;
+  inset: -0.75rem -0.25rem 0;
 }
 
 .rc__species:focus-visible {
@@ -2050,6 +2054,7 @@
 
 .rc__close {
   position: relative;
+  z-index: 2; /* over the species name's target when it is on the first line */
   display: grid;
   place-items: center;
   width: 2rem;
@@ -2097,7 +2102,7 @@
 }
 
 /* Links, not buttons: neither is the answer, both are a next step. The
-   visible line is 28px; the target reaches 44px. */
+   visible line is 28px; the target reaches 44px, downward. */
 .rc__link {
   position: relative;
   display: inline-flex;
@@ -2117,7 +2122,7 @@
 .rc__link::after {
   content: "";
   position: absolute;
-  inset: -0.5rem 0;
+  inset: 0 0 -1rem; /* 28px + 16px: down only, away from the species name */
 }
 
 .rc__link[hidden] {
@@ -2132,5 +2137,13 @@
   .rc__link:hover span {
     text-decoration: underline;
     text-underline-offset: 3px;
+  }
+}
+
+/* Narrow phones: a third line rather than a sentence cut short. */
+@media (max-width: 379.98px) {
+  .rc__summary {
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
   }
 }
