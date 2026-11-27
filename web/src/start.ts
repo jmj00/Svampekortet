@@ -475,12 +475,9 @@ export function initStart(deps: StartDeps): StartScreen {
   const lead = byId("start-lead");
   const forestsSub = byId("start-forests-sub");
   const forestsFallback = forestsSub.textContent ?? "";
-  const syncInstall = bindInstallButton(
-    byId("start-install") as HTMLButtonElement,
-    // Not on a first visit: once a place has been scored there is a reason
-    // to come back, and a reason to put the app on the home screen.
-    () => hasPin,
-  );
+  // Offered on a first visit too (the owner's choice), wherever the app can
+  // be installed (install.ts).
+  bindInstallButton(byId("start-install") as HTMLButtonElement);
 
   /** With a pin, the home view leads with it: "continue there", with today's
    * line, before the ways to choose another place. */
@@ -499,7 +496,6 @@ export function initStart(deps: StartDeps): StartScreen {
       );
     }
     forestsSub.textContent = hasPin ? "De bedste skove omkring din nål i dag" : forestsFallback;
-    syncInstall();
   }
 
   // --- place step -----------------------------------------------------------
